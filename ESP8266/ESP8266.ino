@@ -10,6 +10,8 @@ AT+CWLIF
 AT+CIFSR 192.168.1.2
 
 */
+// Upload statis assets using tool:
+// https://github.com/esp8266/Arduino/blob/master/doc/filesystem.md#uploading-files-to-file-system
 
 #include <Arduino.h>
 
@@ -60,11 +62,7 @@ void setup() {
     WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
     WiFi.softAP(ssid, password);
 
-    FSInfo fs_info;
-    SPIFFS.info(fs_info);
-    Serial.println("Fs");
-    Serial.println(ESP.getFlashChipSize());
-    Serial.println("Fsend");
+    SPIFFS.begin();
 
     #if DNS_SERVER
         dnsServer.setTTL(300);
@@ -141,26 +139,25 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 
 #if HTTP_SERVER
 void handleRoot() {
-  counter += 1;
-    //httpServer.send(200, "text/html", "<h1>You are connected, counter=" + String(counter) + "</h1>");
-  httpServer.send(200, "\
-    text/html", "<html><head><script>\
-    var connection = new WebSocket('ws://'+location.hostname+':81/',\
-    ['arduino']);connection.onopen = function () {\
-    connection.send('Connect ' + new Date()); }; connection.onerror =\
-    function (error) {    console.log('WebSocket Error ', error);};\
-    connection.onmessage = function (e) {  console.log('Server: ', e.data);};\
-    function sendRGB() {  var r = parseInt(document.getElementById('r').value).toString(16);\
-    var g = parseInt(document.getElementById('g').value).toString(16);\
-    var b = parseInt(document.getElementById('b').value).toString(16);\
-    if(r.length < 2) { r = '0' + r; }   if(g.length < 2) { g = '0' + g; }\
-    if(b.length < 2) { b = '0' + b; }   var rgb = '#'+r+g+b;\
-    console.log('RGB: ' + rgb); connection.send(rgb); }</script>\
-    </head><body>LED Control:" + String(counter) + "<br/><br/>R:\
-    <input id=\"r\" type=\"range\" min=\"0\" max=\"255\" step=\"1\"\
-    onchange=\"sendRGB();\" /><br/>G: <input id=\"g\" type=\"range\"\
-    min=\"0\" max=\"255\" step=\"1\" onchange=\"sendRGB();\" /><br/>B:\
-    <input id=\"b\" type=\"range\" min=\"0\" max=\"255\" step=\"1\"\
-    onchange=\"sendRGB();\" /><br/></body></html>");
+    ls();
+
+    counter += 1;
+    File root = SPIFFS.open("/Index.html", "r");
+    httpServer.send(200, "text/html", root.readString());
+    root.close();
 }
 #endif
+
+void ls() {
+    String str = "";
+    Serial.println("ls:\n");
+    Dir dir = SPIFFS.openDir("/");
+    while (dir.next()) {
+        str += dir.fileName();
+        str += " / ";
+        str += dir.fileSize();
+        str += "\r\n";
+    }
+    Serial.print(str);
+    Serial.println("\n#ls end");
+}
