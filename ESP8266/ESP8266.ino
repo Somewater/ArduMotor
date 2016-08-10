@@ -26,6 +26,7 @@ AT+CIFSR 192.168.1.2
 #define SOFT_AP 0
 #define DNS_SERVER 1
 #define WESOCKET_SERVER 1
+#define WDT_TIMEOUT_MS 30000
 
 
 const byte DNS_PORT = 53;
@@ -46,7 +47,7 @@ void handleRoot();
 int counter = 0;
 
 void setup() {
-    ESP.wdtDisable(); //ESP.wdtEnable();
+    ESP.wdtEnable(WDT_TIMEOUT_MS);
     SPIFFS.begin();
 
     delay(1000);
@@ -66,13 +67,13 @@ void setup() {
     const char *ssid = "<my wifi>";
     const char *password = "<my wifi password>";
     Serial.print("Connecting to ");
-    Serial.println(ssid);
+    Serial.print(ssid);
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
     }
-    Serial.print("Local IP address: "); Serial.println(WiFi.localIP());
+    Serial.print("\nLocal IP address: "); Serial.println(WiFi.localIP());
 #endif
 
 #if DNS_SERVER
@@ -83,7 +84,7 @@ void setup() {
 
 
     httpServer.on("/status", handleRoot);
-    httpServer.serveStatic("/", SPIFFS, "/", "");
+    httpServer.serveStatic("/", SPIFFS, "/", "max-age=86400;");
     httpServer.begin();
     Serial.println("HTTP server started");
 
@@ -95,11 +96,14 @@ void setup() {
 }
 
 void loop() {
+    ESP.wdtEnable(WDT_TIMEOUT_MS);
 #if DNS_SERVER
     dnsServer.processNextRequest();
+    delay(1);
 #endif
 
     httpServer.handleClient();
+    delay(1);
 
 #if WESOCKET_SERVER
     webSocket.loop();
