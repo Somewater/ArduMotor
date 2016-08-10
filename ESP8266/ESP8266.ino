@@ -23,7 +23,7 @@ AT+CIFSR 192.168.1.2
 #include <Hash.h>
 #include "FS.h"
 
-#define SOFT_AP 1
+#define SOFT_AP 0
 #define DNS_SERVER 1
 #define WESOCKET_SERVER 1
 
@@ -46,6 +46,7 @@ void handleRoot();
 int counter = 0;
 
 void setup() {
+    ESP.wdtDisable(); //ESP.wdtEnable();
     SPIFFS.begin();
 
     delay(1000);
@@ -81,7 +82,7 @@ void setup() {
 #endif
 
 
-    httpServer.on("/", handleRoot);
+    httpServer.on("/status", handleRoot);
     httpServer.serveStatic("/", SPIFFS, "/", "");
     httpServer.begin();
     Serial.println("HTTP server started");
@@ -145,9 +146,7 @@ void handleRoot() {
     ls();
 
     counter += 1;
-    File root = SPIFFS.open("/Index.html", "r");
-    httpServer.send(200, "text/html", root.readString());
-    root.close();
+    httpServer.send(200, "text/html", "<h1>Hello World " + String(counter) + "</h1>");
 }
 
 void ls() {
