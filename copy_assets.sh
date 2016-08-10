@@ -10,7 +10,8 @@ required_files=(a/font-awesome.min.css
                 a/onsen-css-comp.min.css
                 a/onsenui.min.css
                 a/onsenui.min.js
-                index.htm)
+                index.htm
+                favicon.ico)
 
 rm -rf "$esp_dir"
 mkdir "$esp_dir"
@@ -18,7 +19,7 @@ mkdir "$esp_dir"
 for file in "${required_files[@]}"
 do
     cp --parents "$file" "$esp_dir"
-    if  [[ $file == *.css ]] || [[ $file == *.js ]] || [[ $file == *.html ]];
+    if  [[ $file == *.css ]] || [[ $file == *.js ]] || [[ $file == *.htm ]];
     then
         cat "$esp_dir/$file" | gzip --best > "$esp_dir/$file.gz"
         rm "$esp_dir/$file"
