@@ -5,47 +5,332 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta http-equiv="Content-Security-Policy" content="default-src * data:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
     <script src="a/onsenui.min.js"></script>
+    <script src="a/jquery-3.1.0.min.js"></script>
     <link rel="stylesheet" href="a/onsenui.min.css">
     <link rel="stylesheet" href="a/font-awesome.min.css">
     <link rel="stylesheet" href="a/onsen-css-comp.min.css">
+    <style type="text/css">
+        .arrow_row {
+        }
+        .arrow_row ons-icon {
+            font-size: 70px;
+        }
+        .arrow_row.left {
+            text-align: right;
+        }
+        .arrow_row.center {
+            text-align: center;
+            min-width: 100px;
+            max-width: 20%;
+        }
+        .arrow_row.right {
+            text-align: left;
+        }
+        .time {
+            background: #fff7bd;
+            color: black;
+        }
+        #consoleMark {
+            position: absolute;
+            top: 0px;
+            bottom: 50%;
+            left: 0;
+            right: 0;
+        }
+        .logEntriesHolder p {
+            margin: 1px;
+            font-family: monospace;
+        }
+        .logEntriesHolder p.info {
+            color: black;
+        }
+        .logEntriesHolder p.warn {
+            color: darkgoldenrod;
+        }
+        .logEntriesHolder p.error {
+            color: darkred;
+        }
+        #coursors {
+            position: absolute;
+            bottom: 0%;
+            background: #f5f5f5;
+            padding: 5px;
+        }
+        .noscroll { position: fixed; overflow-y:scroll }
+    </style>
     <script>
+        function WebSocketClient(ip, port) {
+            this.handlers = {};
+            this.connection = null;
+            this.sendQueue = [];
+            this.onStatusChangedHandlers = [];
+            this.isConnected = false;
+            this.on = function(cmd, handler){
+                this.handlers[cmd] = this.handlers[cmd] || [];
+                if (this.handlers[cmd].indexOf(handler) == -1)
+                    this.handlers[cmd].push(handler);
+            };
+            this.off = function(cmd, handler) {
+                var handlers = (this.handlers[cmd] || []);
+                for (var i in handlers)
+                    if (handlers[i] == handler) {
+                        handlers.splice(i, 1);
+                        return true;
+                    }
+                return false;
+            };
+            this.send = function(cmd, payload){
+                if (this.connection && this.connection.readyState == WebSocket.OPEN) {
+                    var msg = this._toMsg(cmd, payload);
+                    this.connection.send(msg);
+                } else {
+                    this.sendQueue.push([cmd, payload]);
+                }
+            };
+            this.start = function() {
+                this._setIsConnected(false);
+                var self = this;
+                var connection = this.connection =
+                        new WebSocket('ws://' + (ip || location.hostname) + ':' + (port || 81).toString() +  '/');
+                connection.onopen = function() { self._onConnected(); };
+                connection.onclose = function(event) { console.warn('WebSocket Closed', event); self._reconnect(); };
+                connection.onerror = function(error) { console.warn('WebSocket Error', error); };
+                connection.onmessage = function(e) { self._onMessage(e.data); };
+
+            };
+            // handler(status: string), status="connected", "disconnected"
+            this.onStatusChanged = function(handler) {
+                if (this.onStatusChangedHandlers.indexOf(handler) == -1) {
+                    this.onStatusChangedHandlers.push(handler);
+                }
+            };
+            this.status = function() {
+                if (this.isConnected)
+                    return WebSocketClient.CONNECTED;
+                else
+                    return WebSocketClient.DISCONNECTED;
+            };
+            // PRIVATE
+            this._onMessage = function(msg) {
+                var cmds = this._toCmd(msg);
+                var cmd = cmds[0];
+                var payload = cmds[1];
+                var handlers = this.handlers[cmd];
+                if (!handlers || handlers.length == 0) {
+                    throw "Handler for " + cmd + " not found";
+                } else {
+                    for (var i in handlers)
+                        handlers[i](payload);
+                }
+            };
+            this._reconnect = function() {
+                this._setIsConnected(false);
+                console.warn("WS reconnect...");
+                this.start();
+            };
+            this._onConnected = function() {
+                console.warn("WS connected");
+                var sendQueue = this.sendQueue.slice();
+                this.sendQueue = [];
+                for (var i in sendQueue) {
+                    var msg = sendQueue[i];
+                    this.send(msg[0], msg[1]);
+                }
+                this._setIsConnected(true);
+            };
+            this._toCmd = function(msg){
+                var idx = msg.indexOf(':');
+                if (idx == -1) {
+                    throw "Wrong msg: " + msg.toString();
+                } else {
+                    return [msg.substr(0, idx), msg.substr(idx+1)];
+                }
+            };
+            this._toMsg = function(cmd, payload) {
+                return cmd + ":" + payload;
+            };
+            this._setIsConnected = function(value){
+                if (this.isConnected != value) {
+                    this.isConnected = value;
+                    var newStatus = this.status();
+                    for (var i in this.onStatusChangedHandlers) {
+                        var handler = this.onStatusChangedHandlers[i];
+                        handler(newStatus);
+                    }
+                }
+            }
+        }
+        WebSocketClient.CONNECTED = "connected";
+        WebSocketClient.DISCONNECTED = "disconnected";
+
+        function AppController(client) {
+            var self = this;
+            var touch = 'ontouchstart' in document.createElement( 'div' );
+            this.keyPressed = {};
+            this.consoleLog = [];
+            var CONSOLE_LOG_MAX_LEN = 10000;
+            var CONSOLE_UI_MAX_LEN = 100;
+            var LOG = 'log'; var WARN = 'warn'; var ERROR = 'error';
+            this.start = function() {
+                client.onStatusChanged(this.onWsStatusChanged);
+                this.onWsStatusChanged(client.status());
+            };
+            this.onArrow = function(key, pressed){
+                var curPressed = !!this.keyPressed[key];
+                if (curPressed != pressed) {
+                    client.send('arrow', key + ':' + (pressed ? 'down' : 'up'));
+                    this.keyPressed[key] = pressed;
+                }
+            };
+            this.addArrowListeners = function(){
+                var self = this;
+                var arrows = this.getArrows();
+                for (var i in arrows) {
+                    var arrEl = arrows[i][0];
+                    var arrKey = arrows[i][1];
+                    arrEl.data('key', arrKey);
+                    arrEl.on(touch ? 'touchstart' : 'mousedown', function(e){ self.onArrow($(e.currentTarget).data('key'), true); });
+                    arrEl.on(touch ? 'touchend' : 'mouseup', function(e){ self.onArrow($(e.currentTarget).data('key'), false); });
+                    arrEl.on(touch ? 'touchcancel' : 'mouseleave', function(e){ self.onArrow($(e.currentTarget).data('key'), false); });
+
+                };
+            };
+            this.addTabarListeners = function() {
+                var tabbar = $('#mainTabBar');
+                tabbar.on('postchange', this.onTabChanged);
+            };
+            this.onTabChanged = function(ev) {
+                var tabIdx = ev.detail.index;
+                // TODO
+            };
+            this.getArrows = function(){
+                return [
+                    [$('.arrow_row.right ons-fab').first(), 'right'],
+                    [$('.arrow_row.left ons-fab').first(), 'left'],
+                    [$('.arrow_row.center ons-fab').eq(0), 'up'],
+                    [$('.arrow_row.center ons-fab').eq(1), 'down']];
+            };
+            this.onWsStatusChanged = function(status){
+                if (status == WebSocketClient.CONNECTED) {
+                    self.setControls(true);
+                } else if (status == WebSocketClient.DISCONNECTED) {
+                    self.setControls(false);
+                } else {
+                    console.error("Undefined ws status", status);
+                }
+            };
+            this.setControls = function(enabled) {
+                var arrows = this.getArrows();
+                for(var i in arrows)
+                    arrows[i][0].attr('disabled', !enabled);
+            };
+            this.oldConsole = null;// {log, warn, error}
+            this.hookConsole = function() {
+                if(window.console && console.log){
+                    this.oldConsole = {};
+                    this.oldConsole[LOG] = console.log;
+                    this.oldConsole[WARN] = console.warn;
+                    this.oldConsole[ERROR] = console.error;
+                    console.log = function(){ self.onLog(LOG, arguments) };
+                    console.warn = function(){ self.onLog(WARN, arguments) };
+                    console.error = function(){ self.onLog(ERROR, arguments) };
+                }
+            };
+            this.onLog = function(level, arguments) {
+                var superMethod = this.oldConsole[level]
+                superMethod.apply(this, arguments);
+
+                var time = this._timeNow();
+                var message = Array.prototype.slice.call(arguments, 0).join(' ');
+                var entry = [level, time, message];
+                //this.consoleLog.push([time, message]); // TODO
+                if(this.consoleLog.length > CONSOLE_LOG_MAX_LEN) consoleLog.shift();
+
+                this._addLogEntries('consoleHolder', [entry], CONSOLE_UI_MAX_LEN);
+                this._addLogEntries('logHolder', [entry], CONSOLE_LOG_MAX_LEN);
+            };
+            this._addLogEntries = function(holder, entries, limit) {
+                if (!holder)
+                    return;
+                var l = entries.length;
+                for (var i = 0; i < l; i++) {
+                    var entry = entries[i];
+                    var level = entry[0];
+                    var time = entry[1];
+                    var message = entry[2];
+                    if (i % 100 == 0) {
+                        if ($("#" + holder + " p").length > limit * 2) {
+                            $('#' + holder).children().slice(limit).remove();
+                        }
+                    }
+                    $('#' + holder).prepend('<p class="' + level + '"><span class="time">' + time + '</span> ' + message + '</p>');
+                }
+            };
+            this._timeNow = function () {
+                var d = new Date()
+                var h = d.getHours();
+                var m = d.getMinutes();
+                var s = d.getSeconds();
+                var ms = Math.floor(d.getMilliseconds() * 0.01);
+                return ((h < 10)?"0":"") + h +":"+
+                        ((m < 10)?"0":"") + m +":"+
+                        ((s < 10)?"0":"") + s + "." + ms;
+            };
+        }
+
+        var appInited = false;
+        var wsClient = null;
+        var controller = null;
+        function initializeApp() {
+            if (appInited) return;
+            appInited = true;
+
+            wsClient = new WebSocketClient();
+            wsClient.start();
+            controller = new AppController(wsClient);
+            controller.start();
+            controller.addArrowListeners();
+            controller.addTabarListeners();
+            controller.hookConsole();
+            console.warn("App started");
+        }
         ons.ready(function() {
-            console.log("Onsen UI is ready!");
+            document.addEventListener("init", function(event) { initializeApp(); });
         });
     </script>
 </head>
 <body>
-    <ons-tabbar>
-      <ons-tab label="Tab 1" page="tab1.html" active>
+    <ons-tabbar id="mainTabBar" position="top">
+      <ons-tab label="Controls" page="controls.html" active>
       </ons-tab>
-      <ons-tab label="Tab 2" page="tab2.html">
+      <ons-tab label="Log" page="log.html">
       </ons-tab>
     </ons-tabbar>
 
-    <ons-template id="tab1.html">
-      <ons-page>
-        <ons-toolbar>
-          <div class="center">Tab 1</div>
-        </ons-toolbar>
-
-        <p style="text-align: center; font-size: 50px">
-            <ons-fab><ons-icon icon="fa-angle-left" size="70px"></ons-icon></ons-fab>
-            <ons-button><ons-icon icon="ion-arrow-down-a" size="60px"></ons-icon></ons-button>
-            <ons-button>⬆</ons-button>
-            <ons-button>⬇</ons-button>
-        </p>
+    <ons-template id="controls.html">
+      <ons-page style="position: relative;">
+        <div id="consoleHolder" class="noscroll logEntriesHolder" style="width: 100%">
+            <div id="consoleMark"></div>
+        </div>
+        <ons-row id="coursors" align="center">
+          <ons-col class="arrow_row left">
+            <ons-fab><ons-icon icon="fa-angle-left"></ons-icon></ons-fab>
+          </ons-col>
+          <ons-col class="arrow_row center">
+            <ons-fab><ons-icon icon="fa-angle-up"></ons-icon></ons-fab>
+            <br/>
+            <ons-fab><ons-icon icon="fa-angle-down"></ons-icon></ons-fab>
+          </ons-col>
+          <ons-col class="arrow_row right">
+              <ons-fab><ons-icon icon="fa-angle-right"></ons-icon></ons-fab>
+          </ons-col>
+        </ons-row>
       </ons-page>
     </ons-template>
 
-    <ons-template id="tab2.html">
+    <ons-template id="log.html">
       <ons-page>
-        <ons-toolbar>
-          <div class="center">Tab 2</div>
-        </ons-toolbar>
-
-        <p style="text-align: center;">
-          This is the second page.
-        </p>
+        <div id="logHolder" class="logEntriesHolder"></div>
       </ons-page>
     </ons-template>
 </body>
