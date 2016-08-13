@@ -178,8 +178,8 @@
             this.onArrow = function(key, pressed){
                 var curPressed = !!this.keyPressed[key];
                 if (curPressed != pressed) {
-                    if (navigator.vibrate)
-                        navigator.vibrate(100);
+                    if (pressed && navigator.vibrate)
+                        navigator.vibrate(50);
                     client.send('arrow', key + ':' + (pressed ? 'down' : 'up'));
                     this.keyPressed[key] = pressed;
                 }
@@ -240,7 +240,7 @@
             };
             this.onLog = function(level, arguments) {
                 var superMethod = this.oldConsole[level]
-                superMethod.apply(this, arguments);
+                superMethod.apply(console, arguments);
 
                 var time = this._timeNow();
                 var message = Array.prototype.slice.call(arguments, 0).join(' ');
@@ -283,18 +283,29 @@
         var appInited = false;
         var wsClient = null;
         var controller = null;
+        function tryWithLog(callback){
+            try {
+                callback();
+            }catch(ex) {
+                $('body').children().remove();
+                $('body').append('<h1>' + ex + '</h1>');
+                $('body').append(ex.stack);
+            }
+        }
         function initializeApp() {
             if (appInited) return;
             appInited = true;
 
-            wsClient = new WebSocketClient();
-            wsClient.start();
-            controller = new AppController(wsClient);
-            controller.start();
-            controller.addArrowListeners();
-            controller.addTabarListeners();
-            controller.hookConsole();
-            console.warn("App started");
+            tryWithLog(function(){
+                wsClient = new WebSocketClient();
+                wsClient.start();
+                controller = new AppController(wsClient);
+                controller.start();
+                controller.addArrowListeners();
+                controller.addTabarListeners();
+                controller.hookConsole();
+                console.warn("App started");
+            });
         }
         ons.ready(function() {
             document.addEventListener("init", function(event) { initializeApp(); });

@@ -17,7 +17,7 @@ wsServer = new WebSocketServer({
     // applications, as it defeats all standard cross-origin protection
     // facilities built into the protocol and the browser.  You should
     // *always* verify the connection's origin and decide whether or not
-    // to accept it. 
+    // to accept it.
     autoAcceptConnections: false
 });
 
