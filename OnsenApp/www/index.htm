@@ -178,6 +178,8 @@
             this.onArrow = function(key, pressed){
                 var curPressed = !!this.keyPressed[key];
                 if (curPressed != pressed) {
+                    if (navigator.vibrate)
+                        navigator.vibrate(100);
                     client.send('arrow', key + ':' + (pressed ? 'down' : 'up'));
                     this.keyPressed[key] = pressed;
                 }
