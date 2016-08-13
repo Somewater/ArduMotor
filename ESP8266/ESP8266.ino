@@ -32,7 +32,7 @@ AT+CIFSR 192.168.1.2
 const byte DNS_PORT = 53;
 IPAddress apIP(192, 168, 1, 1);
 
-#if DNS_SERVER
+#if DNS_SERVER && SOFT_AP
     DNSServer dnsServer;
 #endif
 
@@ -76,7 +76,7 @@ void setup() {
     Serial.print("\nLocal IP address: "); Serial.println(WiFi.localIP());
 #endif
 
-#if DNS_SERVER
+#if DNS_SERVER && SOFT_AP
     dnsServer.setTTL(300);
     dnsServer.setErrorReplyCode(DNSReplyCode::ServerFailure);
     dnsServer.start(DNS_PORT, "ardu.local", apIP);
@@ -97,7 +97,7 @@ void setup() {
 
 void loop() {
     ESP.wdtEnable(WDT_TIMEOUT_MS);
-#if DNS_SERVER
+#if DNS_SERVER && SOFT_AP
     dnsServer.processNextRequest();
     delay(1);
 #endif
