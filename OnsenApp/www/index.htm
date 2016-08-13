@@ -13,7 +13,7 @@
         .arrow_row {
         }
         .arrow_row ons-icon {
-            font-size: 70px;
+            font-size: 60px;
         }
         .arrow_row.left {
             text-align: right;
@@ -175,11 +175,15 @@
                 client.onStatusChanged(this.onWsStatusChanged);
                 this.onWsStatusChanged(client.status());
             };
-            this.onArrow = function(key, pressed){
+            this.onArrow = function(currentTarget, key, pressed){
                 var curPressed = !!this.keyPressed[key];
                 if (curPressed != pressed) {
                     if (pressed && navigator.vibrate)
                         navigator.vibrate(50);
+                    if (pressed)
+                        $(currentTarget).css({'box-shadow': '-10px 0 10px #009688, 10px 0 10px #009688, 0 -10px 10px #009688, 0 10px 10px #009688'})
+                    else
+                        $(currentTarget).css({'box-shadow': '0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.4)'})
                     client.send('arrow', key + ':' + (pressed ? 'down' : 'up'));
                     this.keyPressed[key] = pressed;
                 }
@@ -191,9 +195,9 @@
                     var arrEl = arrows[i][0];
                     var arrKey = arrows[i][1];
                     arrEl.data('key', arrKey);
-                    arrEl.on(touch ? 'touchstart' : 'mousedown', function(e){ self.onArrow($(e.currentTarget).data('key'), true); });
-                    arrEl.on(touch ? 'touchend' : 'mouseup', function(e){ self.onArrow($(e.currentTarget).data('key'), false); });
-                    arrEl.on(touch ? 'touchcancel' : 'mouseleave', function(e){ self.onArrow($(e.currentTarget).data('key'), false); });
+                    arrEl.on(touch ? 'touchstart' : 'mousedown', function(e){ self.onArrow(e.currentTarget, $(e.currentTarget).data('key'), true); });
+                    arrEl.on(touch ? 'touchend' : 'mouseup', function(e){ self.onArrow(e.currentTarget, $(e.currentTarget).data('key'), false); });
+                    arrEl.on(touch ? 'touchcancel' : 'mouseleave', function(e){ self.onArrow(e.currentTarget, $(e.currentTarget).data('key'), false); });
 
                 };
             };
