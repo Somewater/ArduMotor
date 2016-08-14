@@ -117,7 +117,9 @@
                 var payload = cmds[1];
                 var handlers = this.handlers[cmd];
                 if (!handlers || handlers.length == 0) {
-                    throw "Handler for " + cmd + " not found";
+                    var err = "Handler for " + cmd + " not found";
+                    console.log(err)
+                    throw err;
                 } else {
                     for (var i in handlers)
                         handlers[i](payload);
@@ -141,7 +143,7 @@
             this._toCmd = function(msg){
                 var idx = msg.indexOf(':');
                 if (idx == -1) {
-                    throw "Wrong msg: " + msg.toString();
+                    console.error("Wrong msg:", msg);
                 } else {
                     return [msg.substr(0, idx), msg.substr(idx+1)];
                 }
