@@ -22,6 +22,8 @@ AT+CIFSR 192.168.1.2
 #include <WebSocketsServer.h>
 #include <Hash.h>
 #include "FS.h"
+// `cp ESP8266/Consts.h.template ESP8266/Consts.h` to create
+#include "Consts.h"
 
 #define SOFT_AP 0
 #define DNS_SERVER 1
@@ -56,16 +58,16 @@ void setup() {
 
 #if SOFT_AP
     Serial.println("Configuring access point...");
-    const char *ssid = "ardu";
-    const char *password = "arduino64";
+    const char *ssid = SOFT_AP_SSID;
+    const char *password = SOFT_AP_PASSWORD;
     WiFi.mode(WIFI_AP);
     WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
     WiFi.softAP(ssid, password);
     IPAddress myIP = WiFi.softAPIP();
     Serial.print("AP IP address: ");    Serial.println(myIP);
 #else
-    const char *ssid = "<my wifi>";
-    const char *password = "<my wifi password>";
+    const char *ssid = MY_WIFI_SSID;
+    const char *password = MY_WIFI_PASSWORD;
     Serial.print("Connecting to ");
     Serial.print(ssid);
     WiFi.begin(ssid, password);

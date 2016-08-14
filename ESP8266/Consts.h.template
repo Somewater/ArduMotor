@@ -1,0 +1,12 @@
+// Your specific secret parameters
+
+#ifndef PROJECT_CONSTS_H
+#define PROJECT_CONSTS_H
+
+#define SOFT_AP_SSID     "ardu"
+#define SOFT_AP_PASSWORD "arduino64"
+
+#define MY_WIFI_SSID        "<my wifi>"
+#define MY_WIFI_PASSWORD    "<my wifi password>"
+
+#endif
