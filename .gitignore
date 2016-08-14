@@ -3,3 +3,6 @@ ESP8266/.pioenvs/
 ESP8266/data
 ESP8266/node_modules/
 ESP8266/Consts.h
+CMakeLists.txt
+cmake/
+
