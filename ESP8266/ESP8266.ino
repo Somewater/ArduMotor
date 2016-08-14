@@ -24,6 +24,8 @@ AT+CIFSR 192.168.1.2
 #include "FS.h"
 // `cp ESP8266/Consts.h.template ESP8266/Consts.h` to create
 #include "Consts.h"
+#include <MD5Builder.h>
+#include "Utils.h"
 
 #define SOFT_AP 0
 #define DNS_SERVER 1
@@ -114,6 +116,7 @@ void loop() {
 
 #if WESOCKET_SERVER
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) {
+    String md5Payload;
 
     switch(type) {
         case WStype_DISCONNECTED:
@@ -132,7 +135,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
             Serial.printf("[%u] get Text: %s\n", num, payload);
 
             // send message to client
-            // webSocket.sendTXT(num, "message here");
+            md5Payload =  md5(payload, lenght);
+            webSocket.sendTXT(num, md5Payload);
 
             // send data to all connected clients
             // webSocket.broadcastTXT("message here");
