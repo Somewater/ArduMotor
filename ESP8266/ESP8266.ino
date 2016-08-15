@@ -52,7 +52,6 @@ WsController controller(&Serial, &Serial);
 void setup() {
     ESP.wdtEnable(WDT_TIMEOUT_MS);
     SPIFFS.begin();
-
     delay(1000);
     Serial.begin(115200);
     Serial.println();
@@ -101,13 +100,14 @@ void loop() {
     ESP.wdtEnable(WDT_TIMEOUT_MS);
 #if DNS_SERVER && SOFT_AP
     dnsServer.processNextRequest();
-    delay(1);
+    yield();
 #endif
 
     httpServer.handleClient();
-    delay(1);
+    yield();
 
     webSocket.loop();
+    yield();
     controller.loop();
 }
 
