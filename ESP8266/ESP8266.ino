@@ -26,10 +26,10 @@ AT+CIFSR 192.168.1.2
 #include "Consts.h"
 #include <MD5Builder.h>
 #include "Utils.h"
+#include "WsController.h"
 
 #define SOFT_AP 0
 #define DNS_SERVER 1
-#define WESOCKET_SERVER 1
 #define WDT_TIMEOUT_MS 30000
 
 
@@ -43,12 +43,11 @@ IPAddress apIP(192, 168, 1, 1);
 ESP8266WebServer httpServer(80);
 void handleRoot();
 
-#if WESOCKET_SERVER
-    WebSocketsServer webSocket = WebSocketsServer(81);
-    void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght);
-#endif
+WebSocketsServer webSocket = WebSocketsServer(81);
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght);
 
 int counter = 0;
+WsController controller(&Serial, &Serial);
 
 void setup() {
     ESP.wdtEnable(WDT_TIMEOUT_MS);
@@ -92,11 +91,10 @@ void setup() {
     httpServer.begin();
     Serial.println("HTTP server started");
 
-#if WESOCKET_SERVER
+    controller.setup();
     webSocket.begin();
     webSocket.onEvent(webSocketEvent);
     Serial.println("WebSocket server started");
-#endif
 }
 
 void loop() {
@@ -109,48 +107,16 @@ void loop() {
     httpServer.handleClient();
     delay(1);
 
-#if WESOCKET_SERVER
     webSocket.loop();
-#endif
+    controller.loop();
 }
 
-#if WESOCKET_SERVER
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) {
-    String md5Payload;
-
-    switch(type) {
-        case WStype_DISCONNECTED:
-            Serial.printf("[%u] Disconnected!\n", num);
-            break;
-        case WStype_CONNECTED:
-            {
-                IPAddress ip = webSocket.remoteIP(num);
-                Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-
-                // send message to client
-                webSocket.sendTXT(num, "Connected");
-            }
-            break;
-        case WStype_TEXT:
-            Serial.printf("[%u] get Text: %s\n", num, payload);
-
-            // send message to client
-            md5Payload =  md5(payload, lenght);
-            webSocket.sendTXT(num, md5Payload);
-
-            // send data to all connected clients
-            // webSocket.broadcastTXT("message here");
-            break;
-        case WStype_BIN:
-            Serial.printf("[%u] get binary lenght: %u\n", num, lenght);
-            hexdump(payload, lenght);
-
-            // send message to client
-            // webSocket.sendBIN(num, payload, lenght);
-            break;
-    }
+void webSocketEvent(uint8_t num,
+                    WStype_t type,
+                    uint8_t * payload,
+                    size_t lenght) {
+    controller.webSocketEvent(&webSocket, num, type, payload, lenght);
 }
-#endif
 
 void handleRoot() {
     ls();
