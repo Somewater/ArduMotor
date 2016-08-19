@@ -27,6 +27,7 @@ AT+CIFSR 192.168.1.2
 #include <MD5Builder.h>
 #include "Utils.h"
 #include "WsController.h"
+#include "EventDispatcher.h"
 
 #define SOFT_AP 0
 #define DNS_SERVER 1

@@ -1,9 +1,11 @@
 #include <Arduino.h>
 
-#ifdef ARDUINO_COMPILE
+#include "EventDispatcher.h"
+
+EventDispatcher eventDispatcher;
 
 void setup() {
-    Serial
+
 }
 
 void loop() {
