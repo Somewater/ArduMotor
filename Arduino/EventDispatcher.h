@@ -60,6 +60,9 @@ public:
         }
         return;
     }
+
+    virtual void reply(String eventType, String event){}
+
 //protected:
     void dispatch(String eventType, String event) {
         const char * key = eventType.c_str();

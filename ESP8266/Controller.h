@@ -2,15 +2,26 @@
 #define CONTROLLER_H
 
 #include "Stream.h"
+#include "EventDispatcher.h"
 
 class Controller {
 public:
-    Controller(Stream *stream, Print *debug);
-    Controller(Stream *stream);
-    virtual void setup();
-    virtual void loop();
+    Controller(EventDispatcher *eventDispatcher, Print *debug = 0) {
+        _eventDispatcher = eventDispatcher;
+        _debug = debug;
+    }
+    void setup() {
+        if (_debug) _debug->println("Controller started");
+    }
+    void loop() {
+
+    }
+    void onEvent(String eventType, String event) {
+        String md5Payload =  md5(eventType + ":" + event);
+        _eventDispatcher->reply("reply", md5Payload);
+    }
 protected:
-    Stream *_stream;
+    EventDispatcher * _eventDispatcher;
     Print *_debug;
 };
 

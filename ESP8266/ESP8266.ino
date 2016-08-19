@@ -26,8 +26,8 @@ AT+CIFSR 192.168.1.2
 #include "Consts.h"
 #include <MD5Builder.h>
 #include "Utils.h"
-#include "WsController.h"
-#include "EventDispatcher.h"
+#include "Controller.h"
+#include "WsEventDispatcher.h"
 
 #define SOFT_AP 0
 #define DNS_SERVER 1
@@ -48,7 +48,8 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght);
 
 int counter = 0;
-WsController controller(&Serial, &Serial);
+WsEventDispatcher wsEventDispatcher(&webSocket, &Serial);
+Controller controller(&wsEventDispatcher, &Serial);
 
 void setup() {
     ESP.wdtEnable(WDT_TIMEOUT_MS);
@@ -116,7 +117,7 @@ void webSocketEvent(uint8_t num,
                     WStype_t type,
                     uint8_t * payload,
                     size_t lenght) {
-    controller.webSocketEvent(&webSocket, num, type, payload, lenght);
+    wsEventDispatcher.webSocketEvent(num, type, payload, lenght);
 }
 
 void handleRoot() {
