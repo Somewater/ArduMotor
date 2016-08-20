@@ -19,6 +19,43 @@
 
 typedef void (*EventHandler)(String eventType, String event);
 
+// Delegates from https://zetta-core.com/index.php?threads/%D0%A1-%D0%9D%D0%B5%D0%B2%D0%B5%D1%80%D0%BE%D1%8F%D1%82%D0%BD%D0%BE-%D0%B1%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B5-%D0%B4%D0%B5%D0%BB%D0%B5%D0%B3%D0%B0%D1%82%D1%8B-c.53/
+class delegate
+{
+public:
+    delegate()
+            : object_ptr(0)
+            , stub_ptr(0)
+    {}
+
+    template <class T, void (T::*TMethod)(String, String)>
+    static delegate* from_method(T* object_ptr)
+    {
+        delegate* d = new delegate();
+        d->object_ptr = object_ptr;
+        d->stub_ptr = &method_stub<T, TMethod>;
+        return d;
+    }
+
+    void operator()(String a1, String a2) const
+    {
+        return (*stub_ptr)(object_ptr, a1, a2);
+    }
+
+private:
+    typedef void (*stub_type)(void* object_ptr, String, String);
+
+    void* object_ptr;
+    stub_type stub_ptr;
+
+    template <class T, void (T::*TMethod)(String, String)>
+    static void method_stub(void* object_ptr, String a1, String a2)
+    {
+        T* p = static_cast<T*>(object_ptr);
+        return (p->*TMethod)(a1, a2);
+    }
+};
+
 bool compareKeys(const char * k1, const char * k2) {
     for (int i = 0; i < EVENT_TYPE_MAX; i ++) {
         char c1 = *(k1 + i);
@@ -38,12 +75,16 @@ public:
     EventDispatcher() : _listeners(compareKeys) {
 
     }
-    void on(char* eventType, EventHandler handler) {
+    ~EventDispatcher() {
+        // TODO: clear _listeners
+    }
+
+    void on(char* eventType, delegate* handler) {
         _listeners.contains("foo");
         const char* key = eventType;
-        EventHandler* handlers;
+        delegate** handlers;
         if (!_listeners.contains(key)) {
-            handlers = new EventHandler[EVENTS_MAX];
+            handlers = new delegate*[EVENTS_MAX];
             for (int i = 0; i < EVENTS_MAX; i++) {
                 handlers[i] = NULL;
             }
@@ -67,18 +108,19 @@ public:
     void dispatch(String eventType, String event) {
         const char * key = eventType.c_str();
         if (_listeners.contains(key)) {
-            EventHandler* handlers = _listeners.get(key);
+            delegate** handlers = _listeners.get(key);
             for (int i = 0; i < EVENTS_MAX; i++) {
                 if (handlers[i] == NULL) {
                     return;
                 } else {
-                    handlers[i](eventType, event);
+                    delegate *d = handlers[i];
+                    (*d)(eventType, event);
                 }
             }
         }
     }
 
-    Map<const char*, EventHandler*, EVENTS_MAX> _listeners;
+    Map<const char*, delegate**, EVENTS_MAX> _listeners;
 };
 
 #endif
