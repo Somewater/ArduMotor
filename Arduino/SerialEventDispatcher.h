@@ -31,16 +31,16 @@ public:
         uint16_t bytesAvailable = Serial.available();
 
         #if SERIAL_EVENT_DISPATCHER_DEBUG
-        bool cycle = false;
-        if ((bytesAvailable > 0) && (maxLengthLeft > 0)) {
-            debugPrint("before");
-            _stream->print("[Loop] ");
-        }
+            bool cycle = false;
+            if ((bytesAvailable > 0) && (maxLengthLeft > 0)) {
+                debugPrint("before");
+                _stream->print("[Loop] ");
+            }
         #endif
 
         while((bytesAvailable > 0) && (maxLengthLeft > 0)) {
             #if SERIAL_EVENT_DISPATCHER_DEBUG
-            cycle = true;
+                cycle = true;
             #endif
             uint16_t readBytes = bytesAvailable;
             if(readBytes > maxLengthLeft)
@@ -57,18 +57,18 @@ public:
             }
 
             #if SERIAL_EVENT_DISPATCHER_DEBUG
-            _stream->print("bytesAvailable = ");
-            _stream->print(bytesAvailable);
-            _stream->print(", maxLengthLeft = ");
-            _stream->print(maxLengthLeft);
-            _stream->print(", _cmdBufferPos = ");
-            _stream->print(_cmdBufferPos);
-            _stream->print(", buffer = ");
-            for (int i = 0; i < _cmdBufferPos + numBytesRead; i++) {
-                char c = (char) * (_cmdBuffer + i);
-                _stream->print(c);
-            }
-            _stream->print("\n");
+                _stream->print("bytesAvailable = ");
+                _stream->print(bytesAvailable);
+                _stream->print(", maxLengthLeft = ");
+                _stream->print(maxLengthLeft);
+                _stream->print(", _cmdBufferPos = ");
+                _stream->print(_cmdBufferPos);
+                _stream->print(", buffer = ");
+                for (int i = 0; i < _cmdBufferPos + numBytesRead; i++) {
+                    char c = (char) * (_cmdBuffer + i);
+                    _stream->print(c);
+                }
+                _stream->print("\n");
             #endif
 
             uint16_t bufEnd = _cmdBufferPos + numBytesRead;
@@ -82,8 +82,8 @@ public:
         }
 
         #if SERIAL_EVENT_DISPATCHER_DEBUG
-        if (cycle)
-            debugPrint("after");
+            if (cycle)
+                debugPrint("after");
         #endif
     }
 
@@ -131,12 +131,12 @@ private:
                 } else if (c == CMD_DELIMITER || c == ALTER_CMD_DELIMITER) {
                     // DISPATCH EVENT (without payload)
                     eventType[eventTypePos] = '\0';
-                    dispatch(eventType, "");
                     if (_debug) {
                         _stream->print("Dispatch eventType=");
                         _stream->print(eventType);
                         _stream->print(", event=<empty>\n");
                     }
+                    dispatch(eventType, "");
 
                     eventTypePos = 0;
                     eventPos = 0;
@@ -149,7 +149,6 @@ private:
                 if (c == CMD_DELIMITER || c == ALTER_CMD_DELIMITER) {
                     event[eventPos] = '\0';
                     // DISPATCH EVENT
-                    dispatch(eventType, event);
                     if (_debug) {
                         _stream->print("Dispatch eventType=");
                         _stream->print(eventType);
@@ -157,6 +156,7 @@ private:
                         _stream->print(event);
                         _stream->print("\n");
                     }
+                    dispatch(eventType, event);
 
                     eventTypePos = 0;
                     eventPos = 0;
@@ -174,11 +174,6 @@ private:
             for (uint16_t i = 0; i < eventTypePos; i++) {
                 char c = eventType[i];
                 buf[i] = c;
-//                _stream->print("buf[");
-//                _stream->print(i);
-//                _stream->print("] = ");hello
-//                _stream->print(c);
-//                _stream->print("\n");
             }
             if (!eventTypeRead) {
                 len += 1 + eventPos;
@@ -186,11 +181,6 @@ private:
                 for (uint16_t i = 0; i < eventPos; i++) {
                     char c = event[i];
                     buf[i + eventTypePos + 1] = c;
-//                    _stream->print("buf[");
-//                    _stream->print(i + eventTypePos + 1);
-//                    _stream->print("] = ");
-//                    _stream->print(c);
-//                    _stream->print("\n");
                 }
             }
             return len;
