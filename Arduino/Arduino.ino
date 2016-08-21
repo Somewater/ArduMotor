@@ -1,16 +1,14 @@
 #include <Arduino.h>
 
-#include "EventDispatcher.h"
+#include "SerialEventDispatcher.h"
 
-EventDispatcher eventDispatcher;
+SerialEventDispatcher eventDispatcher(&Serial, &Serial);
 
 void setup() {
-
+    Serial.begin(9600);
+    Serial.print("started\n");
 }
 
 void loop() {
-
+    eventDispatcher.loop();
 }
-
-
-#endif
