@@ -49,9 +49,6 @@ private:
             _debug->print(eventType);
             _debug->print(", event=");
             _debug->print(event);
-            #ifdef ESP8266
-                _debug->print(", I'm ESP8266");
-            #endif
             _debug->print("\n");
         }
     }
