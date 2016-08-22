@@ -16,14 +16,19 @@ public:
     static const uint16_t MAX_CMD_LEN = 128;
 
     SerialEventDispatcher(Stream *stream, Print *debug = 0) : EventDispatcher() {
-        _cmdBufferLen = MAX_CMD_LEN * 2;
-        _cmdBuffer = (uint8_t*) malloc(_cmdBufferLen);
-        _cmdBufferPos = 0;
+        _inCmdBufferLen = MAX_CMD_LEN * 2;
+        _outCmdBufferLen = MAX_CMD_LEN * 2;
+
+        _inCmdBuffer = (uint8_t*) malloc(_inCmdBufferLen);
+        _inCmdBufferPos = 0;
+        _outCmdBuffer = (uint8_t*) malloc(_outCmdBufferLen);
+        _outCmdBufferPos = 0;
         _stream = stream;
         _debug = debug;
     }
     ~SerialEventDispatcher() {
-        free(_cmdBuffer);
+        free(_inCmdBuffer);
+        free(_outCmdBuffer);
     }
 
     void loop() {
@@ -45,10 +50,10 @@ public:
             uint16_t readBytes = bytesAvailable;
             if(readBytes > maxLengthLeft)
                 readBytes = maxLengthLeft;
-            if(readBytes > _cmdBufferLen)
-                readBytes = _cmdBufferLen;
+            if(readBytes > _inCmdBufferLen)
+                readBytes = _inCmdBufferLen;
 
-            uint16_t numBytesRead = Serial.readBytes(_cmdBuffer + _cmdBufferPos, readBytes);
+            uint16_t numBytesRead = Serial.readBytes(_inCmdBuffer + _inCmdBufferPos, readBytes);
             if(numBytesRead < 1) {
                 #ifdef ESP8266
                 yield();
@@ -61,22 +66,30 @@ public:
                 _stream->print(bytesAvailable);
                 _stream->print(", maxLengthLeft = ");
                 _stream->print(maxLengthLeft);
-                _stream->print(", _cmdBufferPos = ");
-                _stream->print(_cmdBufferPos);
+                _stream->print(", _inCmdBufferPos = ");
+                _stream->print(_inCmdBufferPos);
                 _stream->print(", buffer = ");
-                for (int i = 0; i < _cmdBufferPos + numBytesRead; i++) {
-                    char c = (char) * (_cmdBuffer + i);
+                for (int i = 0; i < _inCmdBufferPos + numBytesRead; i++) {
+                    char c = (char) * (_inCmdBuffer + i);
                     _stream->print(c);
                 }
                 _stream->print("\n");
             #endif
 
-            uint16_t bufEnd = _cmdBufferPos + numBytesRead;
-            _cmdBufferPos = processBuffer(_cmdBuffer, _cmdBufferPos, bufEnd);
+            uint16_t bufEnd = _inCmdBufferPos + numBytesRead;
+            _inCmdBufferPos = processInputBuffer(_inCmdBuffer, _inCmdBufferPos, bufEnd);
 
             #ifdef ESP8266
             yield();
             #endif
+
+            if (_outCmdBufferPos) {
+                processOutputBuffer();
+                #ifdef ESP8266
+                yield();
+                #endif
+            }
+
             maxLengthLeft -= numBytesRead;
             bytesAvailable = Serial.available();
         }
@@ -88,7 +101,22 @@ public:
     }
 
     virtual void reply(String eventType, String event) override {
-
+        if (eventType.length() + 2 + event.length() > _outCmdBufferLen - _outCmdBufferPos) {
+            if (_debug) _debug->print("Output buffer requires resize");
+            uint8_t *temp = (uint8_t*) realloc(_outCmdBuffer, (_outCmdBufferLen * 2) * sizeof(uint8_t));
+            if ( temp != NULL ) {
+                _outCmdBuffer = temp;
+                _outCmdBufferLen = _outCmdBufferLen * 2;
+            } else {
+                if (_debug) _debug->print("Error allocationg memory");
+            }
+        }
+        eventType.getBytes(_outCmdBuffer + _outCmdBufferPos, _outCmdBufferLen - _outCmdBufferPos);
+        _outCmdBufferPos += eventType.length();
+        _outCmdBuffer[_outCmdBufferPos++] = DELIMITER;
+        event.getBytes(_outCmdBuffer + _outCmdBufferPos, _outCmdBufferLen - _outCmdBufferPos);
+        _outCmdBufferPos += event.length();
+        _outCmdBuffer[_outCmdBufferPos++] = CMD_DELIMITER;
     }
 
 #if SERIAL_EVENT_DISPATCHER_DEBUG
@@ -96,10 +124,10 @@ public:
         _stream->print("[");
         _stream->print(name);
         _stream->print("] buffer (");
-        _stream->print(_cmdBufferPos);
+        _stream->print(_inCmdBufferPos);
         _stream->print(") = ");
-        for (int i = 0; i < _cmdBufferPos; i++) {
-            char c = (char) * (_cmdBuffer + i);
+        for (int i = 0; i < _inCmdBufferPos; i++) {
+            char c = (char) * (_inCmdBuffer + i);
             _stream->print(c);
         }
         _stream->print(".\n");
@@ -109,12 +137,16 @@ public:
 protected:
     Stream * _stream;
     Print *_debug;
-    uint8_t * _cmdBuffer;
-    uint16_t _cmdBufferPos;
-    uint16_t _cmdBufferLen;
+    uint8_t * _inCmdBuffer;
+    uint16_t _inCmdBufferPos;
+    uint16_t _inCmdBufferLen;
+    
+    uint8_t * _outCmdBuffer;
+    uint16_t _outCmdBufferPos;
+    uint16_t _outCmdBufferLen;
 
 private:
-    inline uint8_t processBuffer(uint8_t * buf, uint16_t bufStart, uint16_t bufEnd) {
+    inline uint8_t processInputBuffer(uint8_t * buf, uint16_t bufStart, uint16_t bufEnd) {
         char eventType[MAX_CMD_LEN];
         uint16_t eventTypePos = 0;
         char event[MAX_CMD_LEN];
@@ -132,9 +164,9 @@ private:
                     // DISPATCH EVENT (without payload)
                     eventType[eventTypePos] = '\0';
                     if (_debug) {
-                        _stream->print("Dispatch eventType=");
-                        _stream->print(eventType);
-                        _stream->print(", event=<empty>\n");
+                        _debug->print("Dispatch eventType=");
+                        _debug->print(eventType);
+                        _debug->print(", event=<empty>\n");
                     }
                     dispatch(eventType, "");
 
@@ -150,11 +182,11 @@ private:
                     event[eventPos] = '\0';
                     // DISPATCH EVENT
                     if (_debug) {
-                        _stream->print("Dispatch eventType=");
-                        _stream->print(eventType);
-                        _stream->print(", event=");
-                        _stream->print(event);
-                        _stream->print("\n");
+                        _debug->print("Dispatch eventType=");
+                        _debug->print(eventType);
+                        _debug->print(", event=");
+                        _debug->print(event);
+                        _debug->print("\n");
                     }
                     dispatch(eventType, event);
 
@@ -187,6 +219,14 @@ private:
         } else {
             return 0;
         }
+    }
+
+    inline void processOutputBuffer() {
+        for (uint8_t i = 0; i < _outCmdBufferPos; i++) {
+            char c = (char) _outCmdBuffer[i];
+            _stream->print(c);
+        }
+        _outCmdBufferPos = 0;
     }
 };
 

@@ -2,7 +2,7 @@
 
 #include "SerialEventDispatcher.h"
 
-SerialEventDispatcher eventDispatcher(&Serial, &Serial);
+SerialEventDispatcher eventDispatcher(&Serial);
 
 void setup() {
     Serial.begin(9600);
