@@ -84,8 +84,8 @@ public:
         const char* key = eventType;
         delegate** handlers;
         if (!_listeners.contains(key)) {
-            handlers = new delegate*[EVENTS_MAX];
-            for (int i = 0; i < EVENTS_MAX; i++) {
+            handlers = new delegate*[EVENT_HANDLERS_MAX];
+            for (int i = 0; i < EVENT_HANDLERS_MAX; i++) {
                 handlers[i] = NULL;
             }
             _listeners.set(key, handlers);
@@ -93,7 +93,7 @@ public:
             handlers = _listeners.get(key);
         }
 
-        for (int i = 0; i < EVENTS_MAX; i++) {
+        for (int i = 0; i < EVENT_HANDLERS_MAX; i++) {
             if (handlers[i] == NULL) {
                 handlers[i] = handler;
                 return;
@@ -109,7 +109,7 @@ public:
         const char * key = eventType.c_str();
         if (_listeners.contains(key)) {
             delegate** handlers = _listeners.get(key);
-            for (int i = 0; i < EVENTS_MAX; i++) {
+            for (int i = 0; i < EVENT_HANDLERS_MAX; i++) {
                 if (handlers[i] == NULL) {
                     return;
                 } else {

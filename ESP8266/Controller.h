@@ -6,16 +6,19 @@
 
 class Controller {
 public:
-    Controller(EventDispatcher *eventDispatcher, Print *debug = 0) {
-        _eventDispatcher = eventDispatcher;
+    Controller(EventDispatcher *server, EventDispatcher *arduino, Print *debug = 0) {
+        _server = server;
+        _arduino = arduino;
         _debug = debug;
 
         delegate *onArrow = delegate::from_method<Controller, &Controller::onArrow>(this);
         delegate *onConnectDisconnect = delegate::from_method<Controller, &Controller::onConnectDisconnect>(this);
+        delegate *onArduinoDebugMsg = delegate::from_method<Controller, &Controller::onArduinoDebugMsg>(this);
 
-        _eventDispatcher->on("arrow", onArrow);
-        _eventDispatcher->on("connected", onConnectDisconnect);
-        _eventDispatcher->on("disconnected", onConnectDisconnect);
+        _server->on("arrow", onArrow);
+        _server->on("connected", onConnectDisconnect);
+        _server->on("disconnected", onConnectDisconnect);
+        _arduino->on("debug", onArduinoDebugMsg);
     }
     void setup() {
         if (_debug) _debug->println("Controller started");
@@ -25,19 +28,23 @@ public:
     }
     void onArrow(String eventType, String event) {
         debugPrint("onArrow", eventType, event);
-        String md5Payload =  md5(eventType + ":" + event);
-        _eventDispatcher->reply("reply", md5Payload);
+        _arduino->reply(eventType, event);
     }
 
     void onConnectDisconnect(String eventType, String event) {
         debugPrint("onConnectDisconnect", eventType, event);
         if (eventType.equals("connected"))
-            _eventDispatcher->reply("hi", "Hello");
+            _server->reply("hi", "Hello");
         else
-            _eventDispatcher->reply("info", "One of us left");
+            _server->reply("info", "One of us left");
+    }
+
+    void onArduinoDebugMsg(String eventType, String event) {
+        _server->reply(eventType, event);
     }
 protected:
-    EventDispatcher * _eventDispatcher;
+    EventDispatcher * _server; // channel with mobile app through wifi
+    EventDispatcher * _arduino;// channel with Arduino
     Print *_debug;
 
 private:

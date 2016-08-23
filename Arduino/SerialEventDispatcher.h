@@ -1,5 +1,5 @@
-#ifndef WS_EVENT_DISPATCHER_H
-#define WS_EVENT_DISPATCHER_H
+#ifndef SERIAL_EVENT_DISPATCHER_H
+#define SERIAL_EVENT_DISPATCHER_H
 
 #include "EventDispatcher.h"
 #include "Stream.h"
@@ -33,7 +33,7 @@ public:
 
     void loop() {
         uint16_t maxLengthLeft = MAX_CMD_LEN << 3;// max quantity of bytes read per loop
-        uint16_t bytesAvailable = Serial.available();
+        uint16_t bytesAvailable = _stream->available();
 
         #if SERIAL_EVENT_DISPATCHER_DEBUG
             bool cycle = false;
@@ -53,7 +53,7 @@ public:
             if(readBytes > _inCmdBufferLen)
                 readBytes = _inCmdBufferLen;
 
-            uint16_t numBytesRead = Serial.readBytes(_inCmdBuffer + _inCmdBufferPos, readBytes);
+            uint16_t numBytesRead = _stream->readBytes(_inCmdBuffer + _inCmdBufferPos, readBytes);
             if(numBytesRead < 1) {
                 #ifdef ESP8266
                 yield();
@@ -91,7 +91,7 @@ public:
             }
 
             maxLengthLeft -= numBytesRead;
-            bytesAvailable = Serial.available();
+            bytesAvailable = _stream->available();
         }
 
         #if SERIAL_EVENT_DISPATCHER_DEBUG

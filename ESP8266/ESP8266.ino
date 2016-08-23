@@ -28,6 +28,7 @@ AT+CIFSR 192.168.1.2
 #include "Utils.h"
 #include "Controller.h"
 #include "WsEventDispatcher.h"
+#include "SerialEventDispatcher.h"
 
 #define SOFT_AP 0
 #define DNS_SERVER 1
@@ -48,13 +49,16 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght);
 
 int counter = 0;
-WsEventDispatcher wsEventDispatcher(&webSocket, &Serial);
-Controller controller(&wsEventDispatcher, &Serial);
+Print * debug = 0;
+WsEventDispatcher wsEventDispatcher(&webSocket, debug);
+SerialEventDispatcher serialEventDispatcher(&Serial, debug);
+Controller controller(&wsEventDispatcher, &serialEventDispatcher, &Serial);
 
 void setup() {
     ESP.wdtEnable(WDT_TIMEOUT_MS);
     SPIFFS.begin();
     delay(1000);
+    //softSerial.begin(9600);
     Serial.begin(115200);
     Serial.println();
 
@@ -109,6 +113,8 @@ void loop() {
     yield();
 
     webSocket.loop();
+    yield();
+    serialEventDispatcher.loop();
     yield();
     controller.loop();
 }
