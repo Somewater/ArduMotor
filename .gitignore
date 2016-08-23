@@ -5,6 +5,7 @@ ESP8266/node_modules/
 ESP8266/Consts.h
 
 ESP8266/EventDispatcher.h
+ESP8266/SerialEventDispatcher.h
 ESP8266/HashMap.h
 ESP8266/Vector.h
 

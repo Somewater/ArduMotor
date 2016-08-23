@@ -52,15 +52,14 @@ int counter = 0;
 Print * debug = 0;
 WsEventDispatcher wsEventDispatcher(&webSocket, debug);
 SerialEventDispatcher serialEventDispatcher(&Serial, debug);
-Controller controller(&wsEventDispatcher, &serialEventDispatcher, &Serial);
+Controller controller(&wsEventDispatcher, &serialEventDispatcher, debug);
 
 void setup() {
     ESP.wdtEnable(WDT_TIMEOUT_MS);
+    Serial.begin(9600);
+    Serial.println("start");
     SPIFFS.begin();
     delay(1000);
-    //softSerial.begin(9600);
-    Serial.begin(115200);
-    Serial.println();
 
 #if SOFT_AP
     Serial.println("Configuring access point...");

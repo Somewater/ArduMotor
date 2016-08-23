@@ -10,7 +10,8 @@ public:
         _server = server;
         _arduino = arduino;
         _debug = debug;
-
+    }
+    void setup() {
         delegate *onArrow = delegate::from_method<Controller, &Controller::onArrow>(this);
         delegate *onConnectDisconnect = delegate::from_method<Controller, &Controller::onConnectDisconnect>(this);
         delegate *onArduinoDebugMsg = delegate::from_method<Controller, &Controller::onArduinoDebugMsg>(this);
@@ -19,8 +20,7 @@ public:
         _server->on("connected", onConnectDisconnect);
         _server->on("disconnected", onConnectDisconnect);
         _arduino->on("debug", onArduinoDebugMsg);
-    }
-    void setup() {
+
         if (_debug) _debug->println("Controller started");
     }
     void loop() {

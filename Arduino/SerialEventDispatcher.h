@@ -94,6 +94,10 @@ public:
             bytesAvailable = _stream->available();
         }
 
+        if (_outCmdBufferPos) {
+            processOutputBuffer();
+        }
+
         #if SERIAL_EVENT_DISPATCHER_DEBUG
             if (cycle)
                 debugPrint("after");
