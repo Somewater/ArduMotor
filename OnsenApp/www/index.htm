@@ -370,7 +370,7 @@
                 $('#pingTablo').html(' ' + this._dd(ping, 3));
                 $('#arduinoPingTablo').html(' ' + this._dd(pingArduino, 3));
 
-                $('#refreshConnection').attr('disabled', ping > 1000);
+                $('#refreshConnection').attr('disabled', ping < 1000 && client.status() == WebSocketClient.CONNECTED);
             };
             this._dd = function(num, fixsize) {
                 if (fixsize == 2) {
