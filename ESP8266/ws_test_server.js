@@ -40,7 +40,10 @@ wsServer.on('request', function(request) {
 
     connection.on('message', function(message) {
         if (message.type === 'utf8') {
-            console.log('Received Message: ' + message.utf8Data);
+            //console.log('Received Message: ' + message.utf8Data);
+            var cmd = message.utf8Data.substring(0, message.utf8Data.indexOf(':'));
+            var payload = message.utf8Data.substring(message.utf8Data.indexOf(':') + 1);
+            onCmd(connection, cmd, payload);
             // connection.sendUTF(message.utf8Data);
         }
         else if (message.type === 'binary') {
@@ -55,3 +58,13 @@ wsServer.on('request', function(request) {
 
     connection.sendUTF("Hallo Client!");
 });
+
+function onCmd(connection, cmd, payload) {
+    console.log("cmd=" + cmd + ", payload=" + payload);
+    if (cmd == 'ping') {
+        connection.sendUTF("pong:" + payload.toString());
+        setTimeout(function(){
+            connection.sendUTF("pong_arduino:" + payload.toString());
+        }, 500)
+    }
+}

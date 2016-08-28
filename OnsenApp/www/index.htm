@@ -50,7 +50,7 @@
         .logEntriesHolder p.error {
             color: darkred;
         }
-        #coursors {
+        .rows {
             position: absolute;
             bottom: 0%;
             background: #f5f5f5;
@@ -93,7 +93,7 @@
                 var connection = this.connection =
                         new WebSocket('ws://' + (ip || location.hostname) + ':' + (port || 81).toString() +  '/');
                 connection.onopen = function() { self._onConnected(); };
-                connection.onclose = function(event) { console.warn('WebSocket Closed', event); self._reconnect(); };
+                connection.onclose = function(event) { console.warn('WebSocket Closed', event); self.reconnect(); };
                 connection.onerror = function(error) { console.warn('WebSocket Error', error); };
                 connection.onmessage = function(e) { self._onMessage(e.data); };
 
@@ -126,7 +126,7 @@
                         handlers[i](payload);
                 }
             };
-            this._reconnect = function() {
+            this.reconnect = function() {
                 this._setIsConnected(false);
                 console.warn("WS reconnect...");
                 this.start();
@@ -174,9 +174,42 @@
             var CONSOLE_LOG_MAX_LEN = 10000;
             var CONSOLE_UI_MAX_LEN = 100;
             var LOG = 'log'; var WARN = 'warn'; var ERROR = 'error';
+            this.tickTimer = null;
+            this.tickLastTimestamp = 0;
+            this.prevPing = 0;
+            this.lastPingAccumMs = 0;
+
+            this.pingSend = {};// [<number>] -> <time ms>; last 10
+            this.pongReceived = null; // [<number>, <time ms>]
+            this.pongReceivedArduino = null;
+
             this.start = function() {
                 client.onStatusChanged(this.onWsStatusChanged);
+                client.on("pong", this.onPong);
+                client.on("pong_arduino", this.onPongArduino);
+                client.on("debug", this.onDebug);
+                client.on("debug_arduino", this.onDebugAndroid);
+                client.on("hi", this.onDebugAndroid);
+                client.on("disconnected", this.onDebugAndroid);
                 this.onWsStatusChanged(client.status());
+                this.tickLastTimestamp = this._unixtime();
+                this.tickTimer = setInterval(function(){
+                    var now = self._unixtime();
+                    self.tick(now - self.tickLastTimestamp);
+                    self.tickLastTimestamp = now;
+                }, 100);
+            };
+            this.tick = function(deltaMs) {
+                this.lastPingAccumMs += deltaMs;
+                if (this.lastPingAccumMs > 3000) {
+                    this.prevPing += 1;
+                    client.send('ping', this.prevPing.toString());
+                    this.lastPingAccumMs = 0;
+                    if (this.prevPing > 10)
+                        delete this.pingSend[(this.prevPing - 10).toString()]
+                    this.pingSend[this.prevPing.toString()] = this._unixtime();
+                    this._refreshPingPongUI();
+                }
             };
             this.onArrow = function(currentTarget, key, pressed){
                 var curPressed = !!this.keyPressed[key];
@@ -191,6 +224,34 @@
                     this.keyPressed[key] = pressed;
                 }
             };
+            this.onPong = function(payload) {
+                var num = parseInt(payload);
+                if (!self.pongReceived || self.pongReceived[0] < num) {
+                    var durationMs = self._unixtime() - self.pingSend[num.toString()];
+                    self.pongReceived = [num, durationMs]
+                    self._refreshPingPongUI();
+                }
+            };
+            this.onPongArduino = function(payload) {
+                var num = parseInt(payload);
+                if (!self.pongReceivedArduino || self.pongReceivedArduino[0] < num) {
+                    var durationMs = self._unixtime() - self.pingSend[num.toString()];
+                    self.pongReceivedArduino = [num, durationMs]
+                    self._refreshPingPongUI();
+                }
+            };
+            this.onDebug = function(payload) {
+                console.log("debug", payload);
+            };
+            this.onDebugAndroid = function(payload) {
+                console.log("debug_android", payload);
+            };
+            this.onHi = function(payload) {
+                console.log("hi", payload);
+            };
+            this.onDisconnected = function(payload) {
+                console.log("disconnected", payload);
+            };
             this.addArrowListeners = function(){
                 var self = this;
                 var arrows = this.getArrows();
@@ -203,6 +264,9 @@
                     arrEl.on(touch ? 'touchcancel' : 'mouseleave', function(e){ self.onArrow(e.currentTarget, $(e.currentTarget).data('key'), false); });
 
                 };
+                $('#refreshConnection').first().on(touch ? 'touchstart' : 'mousedown', function(e){
+                    client.reconnect();
+                });
             };
             this.addTabarListeners = function() {
                 var tabbar = $('#mainTabBar');
@@ -285,6 +349,40 @@
                         ((m < 10)?"0":"") + m +":"+
                         ((s < 10)?"0":"") + s + "." + ms;
             };
+            this._unixtime = function() {
+                var d = new Date();
+                return d.getTime();
+            };
+            this._refreshPingPongUI = function() {
+                var pong = (this.pongReceived && this.pongReceived[0]) || 0;
+                var pongArduino = (this.pongReceivedArduino && this.pongReceivedArduino[0]) || 0;
+
+                var sendedNums = Object.keys(this.pingSend).map(function(v){ return parseInt(v) });
+                var pingWoAnswer = Math.min.apply(Math, sendedNums.filter(function(key){ return key >= pong}));
+                var pingWoAnswerArduino = Math.min.apply(Math, sendedNums.filter(function(key){ return key >= pongArduino}));
+
+                var now = this._unixtime();
+                var ping = pingWoAnswer == pong ? this.pongReceived[1] : now - this.pingSend[pingWoAnswer.toString()];
+                var pingArduino = pingWoAnswerArduino == pongArduino ?
+                                    this.pongReceivedArduino[1]:
+                                    now - this.pingSend[pingWoAnswerArduino.toString()];
+
+                $('#pingTablo').html(' ' + this._dd(ping, 3));
+                $('#arduinoPingTablo').html(' ' + this._dd(pingArduino, 3));
+
+                $('#refreshConnection').attr('disabled', ping > 1000);
+            };
+            this._dd = function(num, fixsize) {
+                if (fixsize == 2) {
+                    return (num < 10 ? "0" : "") + num;
+                } else if (fixsize == 3) {
+                    return (num < 100 ? (num < 10 ? "00" : "0") : "") + num;
+                } else {
+                    var s = num.toString();
+                    while (s.length < fixsize) s = '0' + s;
+                    return s;
+                }
+            }
         }
 
         var appInited = false;
@@ -332,7 +430,7 @@
         <div id="consoleHolder" class="noscroll logEntriesHolder" style="width: 100%">
             <div id="consoleMark"></div>
         </div>
-        <ons-row id="coursors" align="center">
+        <ons-row class="rows" align="center">
           <ons-col class="arrow_row left">
             <ons-fab><ons-icon icon="fa-angle-left"></ons-icon></ons-fab>
           </ons-col>
@@ -345,6 +443,24 @@
               <ons-fab><ons-icon icon="fa-angle-right"></ons-icon></ons-fab>
           </ons-col>
         </ons-row>
+
+        <ons-row class="rows" align="center">
+          <ons-col>
+          </ons-col>
+          <ons-col>
+          </ons-col>
+          <ons-col style="text-align: right; font-family: monospace;">
+              <ons-icon icon="fa-signal"></ons-icon><span id="pingTablo">&nbsp;000</span>
+              <br/>
+              <ons-icon icon="fa-car"></ons-icon><span id="arduinoPingTablo">&nbsp;000</span>
+              <br/>
+              <ons-button id="refreshConnection">
+                  <ons-icon icon="fa-refresh"></ons-icon>
+                  Reconnect
+              </ons-button>
+          </ons-col>
+        </ons-row>
+
       </ons-page>
     </ons-template>
 
