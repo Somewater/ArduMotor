@@ -358,8 +358,10 @@
                 var pongArduino = (this.pongReceivedArduino && this.pongReceivedArduino[0]) || 0;
 
                 var sendedNums = Object.keys(this.pingSend).map(function(v){ return parseInt(v) });
-                var pingWoAnswer = Math.min.apply(Math, sendedNums.filter(function(key){ return key >= pong}));
-                var pingWoAnswerArduino = Math.min.apply(Math, sendedNums.filter(function(key){ return key >= pongArduino}));
+                var pingWoAnswer = Math.min.apply(Math, sendedNums.filter(function(key){ return key > pong}));
+                if (!isFinite(pingWoAnswer)) pingWoAnswer = pong;
+                var pingWoAnswerArduino = Math.min.apply(Math, sendedNums.filter(function(key){ return key > pongArduino}));
+                if (!isFinite(pingWoAnswerArduino)) pingWoAnswerArduino = pongArduino;
 
                 var now = this._unixtime();
                 var ping = pingWoAnswer == pong ? this.pongReceived[1] : now - this.pingSend[pingWoAnswer.toString()];
@@ -373,6 +375,11 @@
                 $('#refreshConnection').attr('disabled', ping < 1000 && client.status() == WebSocketClient.CONNECTED);
             };
             this._dd = function(num, fixsize) {
+                if (isNaN(num)) {
+                    var s = '';
+                    while (s.length < fixsize) s += '-';
+                    return s;
+                }
                 if (fixsize == 2) {
                     return (num < 10 ? "0" : "") + num;
                 } else if (fixsize == 3) {
