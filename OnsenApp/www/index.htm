@@ -113,13 +113,14 @@
             // PRIVATE
             this._onMessage = function(msg) {
                 var cmds = this._toCmd(msg);
+                if (!cmds)
+                    return;
                 var cmd = cmds[0];
                 var payload = cmds[1];
                 var handlers = this.handlers[cmd];
                 if (!handlers || handlers.length == 0) {
                     var err = "Handler for " + cmd + " not found";
-                    console.log(err)
-                    throw err;
+                    console.error(err);
                 } else {
                     for (var i in handlers)
                         handlers[i](payload);
