@@ -56,7 +56,7 @@ wsServer.on('request', function(request) {
         console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
     });
 
-    connection.sendUTF("Hallo Client!");
+    connection.sendUTF("hi");
 });
 
 function onCmd(connection, cmd, payload) {

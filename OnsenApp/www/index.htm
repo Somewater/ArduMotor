@@ -144,7 +144,7 @@
             this._toCmd = function(msg){
                 var idx = msg.indexOf(':');
                 if (idx == -1) {
-                    console.error("Wrong msg:", msg);
+                    return [msg, ""];
                 } else {
                     return [msg.substr(0, idx), msg.substr(idx+1)];
                 }
@@ -189,8 +189,8 @@
                 client.on("pong_arduino", this.onPongArduino);
                 client.on("debug", this.onDebug);
                 client.on("debug_arduino", this.onDebugAndroid);
-                client.on("hi", this.onDebugAndroid);
-                client.on("disconnected", this.onDebugAndroid);
+                client.on("hi", this.onHi);
+                client.on("disconnected", this.onDisconnected);
                 this.onWsStatusChanged(client.status());
                 this.tickLastTimestamp = this._unixtime();
                 this.tickTimer = setInterval(function(){
