@@ -34,9 +34,9 @@ public:
     void onConnectDisconnect(String eventType, String event) {
         debugPrint("onConnectDisconnect", eventType, event);
         if (eventType.equals("connected"))
-            _server->reply("hi", "Hello");
+            _server->reply("hi", event);
         else
-            _server->reply("info", "One of us left");
+            _server->reply("disconnected", event);
     }
 
     void onArduinoDebugMsg(String eventType, String event) {

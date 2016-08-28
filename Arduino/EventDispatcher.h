@@ -6,7 +6,7 @@
 #include "HashMap.h"
 
 #ifndef EVENTS_MAX
-    #define EVENTS_MAX 10
+    #define EVENTS_MAX 30
 #endif
 
 #ifndef EVENT_TYPE_MAX
