@@ -11,14 +11,21 @@ public:
         _debug = debug;
         unsigned long now = millis();
         every1sec = now;
+        _silent = false;
     }
 
     void setup() {
         delegate *onArrow = delegate::from_method<ArduinoController, &ArduinoController::onArrow>(this);
         delegate *onServerDebug = delegate::from_method<ArduinoController, &ArduinoController::onServerDebug>(this);
+        delegate *onConnected = delegate::from_method<ArduinoController, &ArduinoController::onConnected>(this);
+        delegate *onDisconnected = delegate::from_method<ArduinoController, &ArduinoController::onDisconnected>(this);
+        delegate *onPing = delegate::from_method<ArduinoController, &ArduinoController::onPing>(this);
 
         _server->on("arrow", onArrow);
         _server->on("debug", onServerDebug);
+        _server->on("connected", onConnected);
+        _server->on("connected", onDisconnected);
+        _server->on("ping", onPing);
 
         pinMode(2, OUTPUT);
         pinMode(3, OUTPUT);
@@ -70,10 +77,25 @@ protected:
         debugPrint("onServerDebug", eventType, event);
     }
 
+    void onConnected(String eventType, String event) {
+        if (!_silent)
+            _server->reply("hi", event);
+    }
+
+    void onDisconnected(String eventType, String event) {
+
+    }
+
+    void onPing(String eventType, String event) {
+        if (!_silent)
+            _server->reply("pong", event);
+    }
+
 private:
     EventDispatcher * _server;
     Print * _debug;
     unsigned long every1sec;
+    bool _silent;
 
     void debugPrint(const char * from, String eventType, String event) {
         if (_debug) {
@@ -85,6 +107,13 @@ private:
             _debug->print(event);
             _debug->print("\n");
         }
+    }
+
+    void debug(String msg) {
+        if (_debug)
+            _debug->print(msg);
+        if(!_silent)
+            _server->reply("debug", msg);
     }
 };
 
