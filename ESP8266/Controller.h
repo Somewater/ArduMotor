@@ -15,11 +15,18 @@ public:
         delegate *onArrow = delegate::from_method<Controller, &Controller::onArrow>(this);
         delegate *onConnectDisconnect = delegate::from_method<Controller, &Controller::onConnectDisconnect>(this);
         delegate *onArduinoDebugMsg = delegate::from_method<Controller, &Controller::onArduinoDebugMsg>(this);
+        delegate *onArduinoHi = delegate::from_method<Controller, &Controller::onArduinoHi>(this);
+        delegate *onPing = delegate::from_method<Controller, &Controller::onPing>(this);
+        delegate *onArduinoPong = delegate::from_method<Controller, &Controller::onArduinoPong>(this);
 
         _server->on("arrow", onArrow);
         _server->on("connected", onConnectDisconnect);
         _server->on("disconnected", onConnectDisconnect);
+        _server->on("ping", onPing);
+
         _arduino->on("debug", onArduinoDebugMsg);
+        _arduino->on("hi", onArduinoHi);
+        _arduino->on("pong", onArduinoPong);
 
         if (_debug) _debug->println("Controller started");
     }
@@ -33,14 +40,30 @@ public:
 
     void onConnectDisconnect(String eventType, String event) {
         debugPrint("onConnectDisconnect", eventType, event);
-        if (eventType.equals("connected"))
+        if (eventType.equals("connected")) {
             _server->reply("hi", event);
-        else
+            _arduino->reply("connected", event);
+        } else {
             _server->reply("disconnected", event);
+            _arduino->reply("disconnected", event);
+        }
     }
 
     void onArduinoDebugMsg(String eventType, String event) {
-        _server->reply(eventType, event);
+        _server->reply("debug_arduino", event);
+    }
+
+    void onArduinoHi(String eventType, String event) {
+        _server->reply("hi_arduino", event);
+    }
+
+    void onPing(String eventType, String event) {
+        _server->reply("pong", event);
+        _arduino->reply(eventType, event);
+    }
+
+    void onArduinoPong(String eventType, String event) {
+        _server->reply("pong_arduino", event);
     }
 protected:
     EventDispatcher * _server; // channel with mobile app through wifi
@@ -58,6 +81,14 @@ private:
             _debug->print(event);
             _debug->print("\n");
         }
+    }
+
+    void debug(String msg, bool toApp) {
+        if (_debug) _debug->println("[DEBUG] " + msg);
+        if (toApp)
+            _server->reply("debug", msg);
+        else
+            _arduino->reply("debug", msg);
     }
 };
 
