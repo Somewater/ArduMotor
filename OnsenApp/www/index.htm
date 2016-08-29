@@ -188,7 +188,7 @@
                 client.on("pong", this.onPong);
                 client.on("pong_arduino", this.onPongArduino);
                 client.on("debug", this.onDebug);
-                client.on("debug_arduino", this.onDebugAndroid);
+                client.on("debug_arduino", this.onDebugArduino);
                 client.on("hi", this.onHi);
                 client.on("disconnected", this.onDisconnected);
                 this.onWsStatusChanged(client.status());
@@ -243,8 +243,8 @@
             this.onDebug = function(payload) {
                 console.log("debug", payload);
             };
-            this.onDebugAndroid = function(payload) {
-                console.log("debug_android", payload);
+            this.onDebugArduino = function(payload) {
+                console.log("debug_arduino", payload);
             };
             this.onHi = function(payload) {
                 console.log("hi", payload);
