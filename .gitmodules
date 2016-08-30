@@ -1,3 +1,0 @@
-[submodule "ESP8266/lib/arduinoWebSockets"]
-	path = ESP8266/lib/arduinoWebSockets
-	url = https://github.com/Links2004/arduinoWebSockets.git
