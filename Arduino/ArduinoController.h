@@ -43,6 +43,13 @@ public:
         }
     }
 
+    void debug(String msg) {
+        if (_debug)
+            _debug->print(msg + "\n");
+        if(!_silent)
+            _server->reply("debug", msg);
+    }
+
 protected:
 
     void onEvery1Sec(unsigned long now) {
@@ -107,13 +114,6 @@ private:
             _debug->print(event);
             _debug->print("\n");
         }
-    }
-
-    void debug(String msg) {
-        if (_debug)
-            _debug->print(msg);
-        if(!_silent)
-            _server->reply("debug", msg);
     }
 };
 
