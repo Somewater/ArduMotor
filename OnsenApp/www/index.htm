@@ -190,6 +190,7 @@
                 client.on("debug", this.onDebug);
                 client.on("debug_arduino", this.onDebugArduino);
                 client.on("hi", this.onHi);
+                client.on("hi_arduino", this.onHiArduino);
                 client.on("disconnected", this.onDisconnected);
                 this.onWsStatusChanged(client.status());
                 this.tickLastTimestamp = this._unixtime();
@@ -248,6 +249,9 @@
             };
             this.onHi = function(payload) {
                 console.log("hi", payload);
+            };
+            this.onHiArduino = function(payload) {
+                console.log("hi_arduino", payload);
             };
             this.onDisconnected = function(payload) {
                 console.log("disconnected", payload);
