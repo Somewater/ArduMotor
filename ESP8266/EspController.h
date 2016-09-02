@@ -1,23 +1,23 @@
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#ifndef ESP_CONTROLLER_H
+#define ESP_CONTROLLER_H
 
 #include "Stream.h"
 #include "EventDispatcher.h"
 
-class Controller {
+class EspController {
 public:
-    Controller(EventDispatcher *server, EventDispatcher *arduino, Print *debug = 0) {
+    EspController(EventDispatcher *server, EventDispatcher *arduino, Print *debug = 0) {
         _server = server;
         _arduino = arduino;
         _debug = debug;
     }
     void setup() {
-        delegate *onArrow = delegate::from_method<Controller, &Controller::onArrow>(this);
-        delegate *onConnectDisconnect = delegate::from_method<Controller, &Controller::onConnectDisconnect>(this);
-        delegate *onArduinoDebugMsg = delegate::from_method<Controller, &Controller::onArduinoDebugMsg>(this);
-        delegate *onArduinoHi = delegate::from_method<Controller, &Controller::onArduinoHi>(this);
-        delegate *onPing = delegate::from_method<Controller, &Controller::onPing>(this);
-        delegate *onArduinoPong = delegate::from_method<Controller, &Controller::onArduinoPong>(this);
+        delegate *onArrow = delegate::from_method<EspController, &EspController::onArrow>(this);
+        delegate *onConnectDisconnect = delegate::from_method<EspController, &EspController::onConnectDisconnect>(this);
+        delegate *onArduinoDebugMsg = delegate::from_method<EspController, &EspController::onArduinoDebugMsg>(this);
+        delegate *onArduinoHi = delegate::from_method<EspController, &EspController::onArduinoHi>(this);
+        delegate *onPing = delegate::from_method<EspController, &EspController::onPing>(this);
+        delegate *onArduinoPong = delegate::from_method<EspController, &EspController::onArduinoPong>(this);
 
         _server->on("arrow", onArrow);
         _server->on("connected", onConnectDisconnect);
@@ -28,7 +28,7 @@ public:
         _arduino->on("hi", onArduinoHi);
         _arduino->on("pong", onArduinoPong);
 
-        if (_debug) _debug->println("Controller started");
+        if (_debug) _debug->println("EspController started");
     }
     void loop() {
 

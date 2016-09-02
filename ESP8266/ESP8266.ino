@@ -26,7 +26,7 @@ AT+CIFSR 192.168.1.2
 #include "Consts.h"
 #include <MD5Builder.h>
 #include "Utils.h"
-#include "Controller.h"
+#include "EspController.h"
 #include "WsEventDispatcher.h"
 #include "SerialEventDispatcher.h"
 
@@ -52,7 +52,7 @@ int counter = 0;
 Print * debug = 0;
 WsEventDispatcher wsEventDispatcher(&webSocket, debug);
 SerialEventDispatcher serialEventDispatcher(&Serial, debug);
-Controller controller(&wsEventDispatcher, &serialEventDispatcher, debug);
+EspController controller(&wsEventDispatcher, &serialEventDispatcher, debug);
 
 void setup() {
     ESP.wdtEnable(WDT_TIMEOUT_MS);
