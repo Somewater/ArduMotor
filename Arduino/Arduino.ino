@@ -4,9 +4,21 @@
 #include "SoftwareSerial.h"
 #include "ArduinoController.h"
 
-SoftwareSerial softwareSerial(10, 11);
+ArduinoPins pins = {
+        10, // esp rx
+        11, // esp tx
+        2,  // data
+        4,  // latch
+        7,  // clock
+        {0, 1, 3},   // FL (shiftIn1, shiftIn2, enable PWM pin)
+        {2, 3, 5},   // FR
+        {4, 5, 6},   // BL
+        {6, 7, 9}    // BR
+};
+
+SoftwareSerial softwareSerial(pins.espRx, pins.espTx);
 SerialEventDispatcher eventDispatcher(&softwareSerial);
-ArduinoController controller(&eventDispatcher, &Serial);
+ArduinoController controller(&eventDispatcher, &pins, &Serial);
 
 void setup() {
     Serial.begin(9600);
