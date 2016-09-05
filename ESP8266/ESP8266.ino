@@ -30,8 +30,8 @@ AT+CIFSR 192.168.1.2
 #include "WsEventDispatcher.h"
 #include "SerialEventDispatcher.h"
 
-#define SOFT_AP 0
-#define DNS_SERVER 1
+#define SOFT_AP 1
+#define DNS_SERVER 0
 #define WDT_TIMEOUT_MS 30000
 
 
