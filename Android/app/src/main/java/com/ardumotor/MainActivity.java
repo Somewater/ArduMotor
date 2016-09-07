@@ -1,7 +1,12 @@
 package com.ardumotor;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 
+import android.graphics.Color;
+import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -10,7 +15,10 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
-import android.view.Gravity;
+import android.text.Spannable;
+import android.text.method.ScrollingMovementMethod;
+import android.text.style.BackgroundColorSpan;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,7 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-public class MainActivity extends ActionBarActivity implements ActionBar.TabListener {
+public class MainActivity extends ActionBarActivity implements ActionBar.TabListener, WebSocketClient.StatusChange {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -34,6 +42,13 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
      * The {@link ViewPager} that will host the section contents.
      */
     ViewPager mViewPager;
+
+    final WebSocketClient client = new WebSocketClient();
+    final Handler handler = new Handler();
+    private int lastPingAccumMs = 0;
+    private int prevPing = 0;
+    private HashMap<Integer, Long> pingSend = new HashMap<Integer, Long>();
+    SimpleDateFormat dataFormat = new SimpleDateFormat("hh:mm:ss");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,6 +128,137 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
     public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        initializeWs();
+        Runnable loop = new Runnable() {
+            long lastMs = System.currentTimeMillis();
+
+            @Override
+            public void run() {
+                long nowMs = System.currentTimeMillis();
+                try {
+                    MainActivity.this.loop((int)(nowMs - lastMs));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                } finally {
+                    lastMs = nowMs;
+                    handler.postDelayed(this, 100);
+                }
+            }
+        };
+        handler.postDelayed(loop, 100);
+    }
+
+    private void initializeWs() {
+        client.start("ws://192.168.1.1");
+        client.addStatusChangeHandler(this);
+        client.on("pong", new WebSocketClient.Handler() {
+            @Override
+            public void handle(String cmd, String payload) {
+
+            }
+        });
+        client.on("pong_arduino", new WebSocketClient.Handler() {
+            @Override
+            public void handle(String cmd, String payload) {
+
+            }
+        });
+        client.on("debug", new WebSocketClient.Handler() {
+            @Override
+            public void handle(String cmd, String payload) {
+
+            }
+        });
+        client.on("debug_arduino", new WebSocketClient.Handler() {
+            @Override
+            public void handle(String cmd, String payload) {
+
+            }
+        });
+        client.on("hi", new WebSocketClient.Handler() {
+            @Override
+            public void handle(String cmd, String payload) {
+
+            }
+        });
+        client.on("hi_arduino", new WebSocketClient.Handler() {
+            @Override
+            public void handle(String cmd, String payload) {
+
+            }
+        });
+        client.on("disconnected", new WebSocketClient.Handler() {
+            @Override
+            public void handle(String cmd, String payload) {
+
+            }
+        });
+    }
+
+    private void loop(int deltaMs) {
+        lastPingAccumMs += deltaMs;
+        if (lastPingAccumMs > 3000) {
+            prevPing += 1;
+            client.send("ping", Integer.toString(prevPing));
+            lastPingAccumMs = 0;
+            if (prevPing > 10)
+                pingSend.remove(prevPing - 10);
+            pingSend.put(prevPing, System.currentTimeMillis());
+            refreshPingPongUI();
+        }
+    }
+
+
+
+    private void refreshPingPongUI() {
+        log("info", "Ping");
+        log("warn", "PingW");
+        log("error", "PingE");
+    }
+
+    @Override
+    public void onWsStatusChanged(boolean connected) {
+        // ???
+    }
+
+    private void log(String level, String msg) {
+        String data = dataFormat.format(new Date());
+        TextView tv = (TextView) findViewById(R.id.console_text);
+        int start, end;
+        Spannable spannableText;
+
+        start = tv.getText().length();
+        tv.append(data);
+        end = tv.getText().length();
+
+        spannableText = (Spannable) tv.getText();
+        spannableText.setSpan(new BackgroundColorSpan(Color.LTGRAY), start, end, 0);
+        spannableText.setSpan(new ForegroundColorSpan(Color.BLACK), start, end, 0);
+
+        start = tv.getText().length();
+        tv.append(" " + msg);
+        end = tv.getText().length();
+
+        spannableText = (Spannable) tv.getText();
+        if (level.equals("warn"))
+            spannableText.setSpan(new ForegroundColorSpan(Color.YELLOW), start, end, 0);
+        else if (level.equals("error"))
+            spannableText.setSpan(new ForegroundColorSpan(Color.RED), start, end, 0);
+        else
+            spannableText.setSpan(new ForegroundColorSpan(Color.BLACK), start, end, 0);
+
+        tv.append("\n");
+
+        while (tv.canScrollVertically(1)) {
+            tv.scrollBy(0, 10);
+        }
+    }
+
+
+
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
@@ -180,6 +326,8 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+            TextView textView = (TextView) rootView.findViewById(R.id.console_text);
+            textView.setMovementMethod(new ScrollingMovementMethod());
             return rootView;
         }
     }
