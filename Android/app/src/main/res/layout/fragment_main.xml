@@ -14,6 +14,7 @@
             android:id="@+id/console_text"
             android:layout_width="match_parent"
             android:layout_height="fill_parent"
+            android:typeface="monospace"
             android:text="Hello\n"
             android:maxLines="1000"
             android:scrollbars="vertical"
@@ -36,12 +37,14 @@
                 android:layout_alignParentLeft="true"
                 android:orientation="horizontal">
             <ImageButton
+                    android:id="@+id/arrow_left_btn"
                     android:layout_width="100px"
                     android:layout_height="100px"
                     android:background="@drawable/round_button"
                     android:gravity="center_vertical|center_horizontal"
                     android:src="@drawable/ic_keyboard_arrow_left_white_18dp"/>
             <ImageButton
+                    android:id="@+id/arrow_right_btn"
                     android:layout_width="100px"
                     android:layout_height="100px"
                     android:background="@drawable/round_button"
@@ -67,7 +70,8 @@
                     android:id="@+id/espPingTxt"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0000"
+                    android:typeface="monospace"
+                    android:text="00000"
                     android:layout_above="@+id/arduinoPingTxt"
                     android:layout_toRightOf="@id/ic_wifi_tethering"
                     android:layout_toEndOf="@id/ic_wifi_tethering"/>
@@ -85,16 +89,17 @@
                     android:id="@+id/arduinoPingTxt"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="1111"
+                    android:typeface="monospace"
+                    android:text="00000"
                     android:layout_alignBottom="@id/ic_directions_car"
                     android:layout_toRightOf="@id/ic_directions_car"
                     android:layout_toEndOf="@id/ic_directions_car"/>
 
             <Button
+                    android:id="@+id/reconnect_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="50px"
-                    android:background="@color/accent_material_light"
-                    android:gravity="center_vertical|center_horizontal"
+                    android:background="@drawable/rect_button"
                     android:text="reconnect"
                     android:textSize="4pt"
                     android:textColor="@color/light"
@@ -108,12 +113,14 @@
                 android:layout_alignParentRight="true"
                 android:orientation="vertical">
             <ImageButton
+                    android:id="@+id/arrow_up_btn"
                     android:layout_width="100px"
                     android:layout_height="100px"
                     android:background="@drawable/round_button"
                     android:gravity="center_vertical|center_horizontal"
                     android:src="@drawable/ic_keyboard_arrow_up_white_18dp"/>
             <ImageButton
+                    android:id="@+id/arrow_down_btn"
                     android:layout_width="100px"
                     android:layout_height="100px"
                     android:background="@drawable/round_button"

@@ -39,25 +39,29 @@ public class WebSocketClient extends WebSocketConnection {
         listeners.put(cmd, handler);
     }
 
+    public void start() {
+        start("ws://192.168.1.1:81");
+    }
+
     public void start(String wsUri) {
-        if (isConnected()) {
-            onStatusChanged();
-            disconnect();
-        }
         try {
             connect(wsUri, new ConnectionHandler() {
                 @Override
                 public void onOpen() {
+                    if (statusChange != null) statusChange.log("warn", "onOpen");
                     onStatusChanged();
                 }
 
                 @Override
                 public void onClose(int i, String s) {
+                    Exception ex = new Exception(); ex.printStackTrace(); // TODO - remove it
+                    if (statusChange != null) statusChange.log("warn", "onClose");
                     onStatusChanged();
                 }
 
                 @Override
                 public void onTextMessage(String s) {
+                    if (statusChange != null) statusChange.log("warn", "onTextMessage: " + s);
                     int idx = s.indexOf(':');
                     String cmd = s.substring(0, idx);
                     String payload = s.substring(idx + 1);
@@ -66,12 +70,12 @@ public class WebSocketClient extends WebSocketConnection {
 
                 @Override
                 public void onRawTextMessage(byte[] bytes) {
-
+                    if (statusChange != null) statusChange.log("warn", "onRawTextMessage");
                 }
 
                 @Override
                 public void onBinaryMessage(byte[] bytes) {
-
+                    if (statusChange != null) statusChange.log("warn", "onBinaryMessage");
                 }
             });
         } catch (WebSocketException e) {
@@ -98,5 +102,7 @@ public class WebSocketClient extends WebSocketConnection {
 
     public interface StatusChange {
         void onWsStatusChanged(boolean connected);
+
+        void log(String level, String message);
     }
 }

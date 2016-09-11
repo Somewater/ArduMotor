@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
@@ -24,9 +25,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
-public class MainActivity extends ActionBarActivity implements ActionBar.TabListener, WebSocketClient.StatusChange {
+public class MainActivity extends ArrowsHandling implements ActionBar.TabListener, WebSocketClient.StatusChange {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -43,15 +45,43 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
      */
     ViewPager mViewPager;
 
-    final WebSocketClient client = new WebSocketClient();
     final Handler handler = new Handler();
-    private int lastPingAccumMs = 0;
-    private int prevPing = 0;
-    private HashMap<Integer, Long> pingSend = new HashMap<Integer, Long>();
     SimpleDateFormat dataFormat = new SimpleDateFormat("hh:mm:ss");
+    boolean initialized = false;
+    Runnable loopRunnable = new Runnable() {
+        long lastMs = System.currentTimeMillis();
+
+        @Override
+        public void run() {
+            if (!initialized) {
+                boolean hasBtn = false;
+                try {
+                    hasBtn = findViewById(R.id.arrow_left_btn) != null;
+                } catch (Exception ex){
+                    ex.printStackTrace();
+                }
+                if (hasBtn)
+                    onInitialize();
+                handler.postDelayed(this, 100);
+                return;
+            }
+
+            long nowMs = System.currentTimeMillis();
+            try {
+                MainActivity.this.loop((int)(nowMs - lastMs));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            } finally {
+                lastMs = nowMs;
+                handler.postDelayed(this, 100);
+            }
+        }
+    };;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        client = new WebSocketClient();
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -131,102 +161,39 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
     @Override
     protected void onStart() {
         super.onStart();
-        initializeWs();
-        Runnable loop = new Runnable() {
-            long lastMs = System.currentTimeMillis();
-
-            @Override
-            public void run() {
-                long nowMs = System.currentTimeMillis();
-                try {
-                    MainActivity.this.loop((int)(nowMs - lastMs));
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                } finally {
-                    lastMs = nowMs;
-                    handler.postDelayed(this, 100);
-                }
-            }
-        };
-        handler.postDelayed(loop, 100);
+        handler.postDelayed(loopRunnable, 100);
     }
 
-    private void initializeWs() {
-        client.start("ws://192.168.1.1");
+    @Override
+    protected void onStop() {
+        super.onStop();
+        handler.removeCallbacks(loopRunnable);
+    }
+
+    @Override
+    protected void initializeWs() {
+        super.initializeWs();
+        client.start();
         client.addStatusChangeHandler(this);
-        client.on("pong", new WebSocketClient.Handler() {
-            @Override
-            public void handle(String cmd, String payload) {
-
-            }
-        });
-        client.on("pong_arduino", new WebSocketClient.Handler() {
-            @Override
-            public void handle(String cmd, String payload) {
-
-            }
-        });
-        client.on("debug", new WebSocketClient.Handler() {
-            @Override
-            public void handle(String cmd, String payload) {
-
-            }
-        });
-        client.on("debug_arduino", new WebSocketClient.Handler() {
-            @Override
-            public void handle(String cmd, String payload) {
-
-            }
-        });
-        client.on("hi", new WebSocketClient.Handler() {
-            @Override
-            public void handle(String cmd, String payload) {
-
-            }
-        });
-        client.on("hi_arduino", new WebSocketClient.Handler() {
-            @Override
-            public void handle(String cmd, String payload) {
-
-            }
-        });
-        client.on("disconnected", new WebSocketClient.Handler() {
-            @Override
-            public void handle(String cmd, String payload) {
-
-            }
-        });
     }
 
-    private void loop(int deltaMs) {
-        lastPingAccumMs += deltaMs;
-        if (lastPingAccumMs > 3000) {
-            prevPing += 1;
-            client.send("ping", Integer.toString(prevPing));
-            lastPingAccumMs = 0;
-            if (prevPing > 10)
-                pingSend.remove(prevPing - 10);
-            pingSend.put(prevPing, System.currentTimeMillis());
-            refreshPingPongUI();
-        }
-    }
-
-
-
-    private void refreshPingPongUI() {
-        log("info", "Ping");
-        log("warn", "PingW");
-        log("error", "PingE");
+    @Override
+    protected void loop(int deltaMs) {
+        super.loop(deltaMs);
     }
 
     @Override
     public void onWsStatusChanged(boolean connected) {
-        // ???
+        getReconnectBtn().setEnabled(!connected || ping == -1 && ping > 1000);
     }
 
-    private void log(String level, String msg) {
+    public void log(String level, String msg) {
         String data = dataFormat.format(new Date());
         TextView tv = (TextView) findViewById(R.id.console_text);
+        if (tv == null) {
+            // TODO: save logs
+            return;
+        }
         int start, end;
         Spannable spannableText;
 
@@ -252,11 +219,41 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
 
         tv.append("\n");
 
-        while (tv.canScrollVertically(1)) {
-            tv.scrollBy(0, 10);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
+            while (tv.canScrollVertically(1)) {
+                tv.scrollBy(0, 10);
+            }
         }
     }
 
+    private Button reconnectBtn;
+    private Button getReconnectBtn() {
+        if (reconnectBtn == null) {
+            reconnectBtn = (Button) findViewById(R.id.reconnect_btn);
+        }
+        return reconnectBtn;
+    }
+
+    public void onInitialize() {
+        if (!initialized) {
+            addListeners();
+            initializeWs();
+            initialized = true;
+        }
+    }
+
+
+    @Override
+    protected void addListeners() {
+        super.addListeners();
+
+        getReconnectBtn().setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                client.start();
+            }
+        });
+    }
 
 
     /**
@@ -279,7 +276,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.TabList
         @Override
         public int getCount() {
             // Show 3 total pages.
-            return 3;
+            return 1;
         }
 
         @Override

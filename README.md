@@ -34,6 +34,6 @@ $ python cmakegen.py . > CMakeLists.txt
 ```
 
 ## Design documents
-1. [System communication scheme](https://docs.google.com/drawings/d/1WH1TgprjyF7VVq3dk5nvMNvsJ5YJpwrI-7L2EGXhmCc/edit?usp=sharing)
+1. [System communication scheme](https://docs.google.com/drawings/d/1WH1TgprjyF7VVq3dk5nvMNvsJ5YJpwrI-7L2EGXhmCc)
 2. [ESP8266-Arduino connection draft](https://circuits.io/circuits/2490797-esp8266-with-arduino)
 3. [Arduino-motors connection draft](https://circuits.io/circuits/1604556-motor-control-with-arduino-and-74hc595-l293d)
