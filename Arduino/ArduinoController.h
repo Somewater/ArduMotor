@@ -194,10 +194,10 @@ private:
                 motorsSpeed[BL] = SPEED * pull;
             }
         } else if(direction) {
-            motorsSpeed[FR] = SPEED * direction;
-            motorsSpeed[BR] = SPEED * direction;
-            motorsSpeed[FL] = SPEED * -direction;
-            motorsSpeed[BL] = SPEED * -direction;
+            motorsSpeed[FR] = SPEED * -direction;
+            motorsSpeed[BR] = SPEED * -direction;
+            motorsSpeed[FL] = SPEED * direction;
+            motorsSpeed[BL] = SPEED * direction;
         }
     }
 
