@@ -51,9 +51,14 @@ abstract public class PingPongCmdHandling extends ActionBarActivity {
             public void handle(String cmd, String payload) {
                 int num = Integer.parseInt(payload);
                 if (pongReceivedArduino == null || pongReceivedArduino.first < num) {
-                    int durationMs = (int)(System.currentTimeMillis() - pingSend.get(num));
-                    pongReceivedArduino = new Pair<Integer, Integer>(num, durationMs);
-                    refreshPingPongUI();
+                    Long pingSendTime = pingSend.get(num);
+                    if (pingSendTime != null) {
+                        int durationMs = (int)(System.currentTimeMillis() - pingSend.get(num));
+                        pongReceivedArduino = new Pair<Integer, Integer>(num, durationMs);
+                        refreshPingPongUI();
+                    } else {
+                        log("error", "Ancient arduino_pong received: " + payload);
+                    }
                 }
             }
         });
