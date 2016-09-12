@@ -28,7 +28,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-public class MainActivity extends ArrowsHandling implements ActionBar.TabListener, WebSocketClient.StatusChange {
+public class MainActivity extends LoggingHandling implements ActionBar.TabListener, WebSocketClient.StatusChange {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -46,7 +46,6 @@ public class MainActivity extends ArrowsHandling implements ActionBar.TabListene
     ViewPager mViewPager;
 
     final Handler handler = new Handler();
-    SimpleDateFormat dataFormat = new SimpleDateFormat("hh:mm:ss");
     boolean initialized = false;
     Runnable loopRunnable = new Runnable() {
         long lastMs = System.currentTimeMillis();
@@ -185,45 +184,6 @@ public class MainActivity extends ArrowsHandling implements ActionBar.TabListene
     @Override
     public void onWsStatusChanged(boolean connected) {
         getReconnectBtn().setEnabled(!connected || ping == -1 && ping > 1000);
-    }
-
-    public void log(String level, String msg) {
-        String data = dataFormat.format(new Date());
-        TextView tv = (TextView) findViewById(R.id.console_text);
-        if (tv == null) {
-            // TODO: save logs
-            return;
-        }
-        int start, end;
-        Spannable spannableText;
-
-        start = tv.getText().length();
-        tv.append(data);
-        end = tv.getText().length();
-
-        spannableText = (Spannable) tv.getText();
-        spannableText.setSpan(new BackgroundColorSpan(Color.LTGRAY), start, end, 0);
-        spannableText.setSpan(new ForegroundColorSpan(Color.BLACK), start, end, 0);
-
-        start = tv.getText().length();
-        tv.append(" " + msg);
-        end = tv.getText().length();
-
-        spannableText = (Spannable) tv.getText();
-        if (level.equals("warn"))
-            spannableText.setSpan(new ForegroundColorSpan(Color.YELLOW), start, end, 0);
-        else if (level.equals("error"))
-            spannableText.setSpan(new ForegroundColorSpan(Color.RED), start, end, 0);
-        else
-            spannableText.setSpan(new ForegroundColorSpan(Color.BLACK), start, end, 0);
-
-        tv.append("\n");
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-            while (tv.canScrollVertically(1)) {
-                tv.scrollBy(0, 10);
-            }
-        }
     }
 
     private Button reconnectBtn;
