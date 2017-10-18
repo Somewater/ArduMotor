@@ -24,29 +24,30 @@
     <RelativeLayout
             android:id="@+id/controls"
             android:layout_width="match_parent"
-            android:layout_height="200px"
+            android:layout_height="@dimen/arrow_panel_height"
             android:layout_alignParentBottom="true"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
             android:background="@color/panel_light">
 
         <LinearLayout
+                android:id="@id/arrows_left_right"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
+                android:layout_alignParentTop="true"
                 android:layout_alignParentLeft="true"
                 android:orientation="horizontal">
             <ImageButton
                     android:id="@+id/arrow_left_btn"
-                    android:layout_width="100px"
-                    android:layout_height="100px"
+                    android:layout_width="@dimen/arrow_button_diameter"
+                    android:layout_height="@dimen/arrow_button_diameter"
                     android:background="@drawable/round_button"
                     android:gravity="center_vertical|center_horizontal"
                     android:src="@drawable/ic_keyboard_arrow_left_white_18dp"/>
             <ImageButton
                     android:id="@+id/arrow_right_btn"
-                    android:layout_width="100px"
-                    android:layout_height="100px"
+                    android:layout_width="@dimen/arrow_button_diameter"
+                    android:layout_height="@dimen/arrow_button_diameter"
                     android:background="@drawable/round_button"
                     android:gravity="center_vertical|center_horizontal"
                     android:src="@drawable/ic_keyboard_arrow_right_white_18dp"/>
@@ -55,7 +56,7 @@
         <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
+                android:layout_toRightOf="@id/arrows_left_right"
                 android:orientation="vertical">
 
             <ImageView
@@ -114,15 +115,15 @@
                 android:orientation="vertical">
             <ImageButton
                     android:id="@+id/arrow_up_btn"
-                    android:layout_width="100px"
-                    android:layout_height="100px"
+                    android:layout_width="@dimen/arrow_button_diameter"
+                    android:layout_height="@dimen/arrow_button_diameter"
                     android:background="@drawable/round_button"
                     android:gravity="center_vertical|center_horizontal"
                     android:src="@drawable/ic_keyboard_arrow_up_white_18dp"/>
             <ImageButton
                     android:id="@+id/arrow_down_btn"
-                    android:layout_width="100px"
-                    android:layout_height="100px"
+                    android:layout_width="@dimen/arrow_button_diameter"
+                    android:layout_height="@dimen/arrow_button_diameter"
                     android:background="@drawable/round_button"
                     android:gravity="center_vertical|center_horizontal"
                     android:src="@drawable/ic_keyboard_arrow_down_white_18dp"/>

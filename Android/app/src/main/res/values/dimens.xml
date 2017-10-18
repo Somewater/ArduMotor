@@ -2,4 +2,7 @@
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
+
+    <dimen name="arrow_panel_height">350px</dimen>
+    <dimen name="arrow_button_diameter">150px</dimen>
 </resources>
