@@ -33,6 +33,7 @@ AT+CIFSR 192.168.1.2
 #define SOFT_AP 1
 #define DNS_SERVER 0
 #define WDT_TIMEOUT_MS 30000
+#define HTTP_SERVER 0
 
 
 const byte DNS_PORT = 53;
@@ -42,8 +43,10 @@ IPAddress apIP(192, 168, 1, 1);
     DNSServer dnsServer;
 #endif
 
-ESP8266WebServer httpServer(80);
-void handleRoot();
+#if HTTP_SERVER
+  ESP8266WebServer httpServer(80);
+  void handleRoot();
+#endif
 
 WebSocketsServer webSocket = WebSocketsServer(81);
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght);
@@ -89,11 +92,12 @@ void setup() {
     dnsServer.start(DNS_PORT, "ardu.local", apIP);
 #endif
 
-
+#if HTTP_SERVER
     httpServer.on("/status", handleRoot);
     httpServer.serveStatic("/", SPIFFS, "/", "max-age=86400;");
     httpServer.begin();
     Serial.println("HTTP server started");
+#endif
 
     controller.setup();
     webSocket.begin();
@@ -108,8 +112,10 @@ void loop() {
     yield();
 #endif
 
+#if HTTP_SERVER
     httpServer.handleClient();
     yield();
+#endif
 
     webSocket.loop();
     yield();
@@ -125,9 +131,9 @@ void webSocketEvent(uint8_t num,
     wsEventDispatcher.webSocketEvent(num, type, payload, lenght);
 }
 
+#if HTTP_SERVER
 void handleRoot() {
     ls();
-
     counter += 1;
     httpServer.send(200, "text/html", "<h1>Hello World " + String(counter) + "</h1>");
 }
@@ -145,3 +151,4 @@ void ls() {
     Serial.print(str);
     Serial.println("\n#ls end");
 }
+#endif
